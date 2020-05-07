@@ -6,4 +6,4 @@
 
 **No idea**
 
-- [ ] ...
+- [ ] Create basic class
