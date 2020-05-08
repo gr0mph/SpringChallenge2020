@@ -7,3 +7,9 @@
 **No idea**
 
 - [ ] Create basic class
+
+**Do a getter for pacman state**
+
+- [ ] @property
+
+**Search an idea**

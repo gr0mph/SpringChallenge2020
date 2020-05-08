@@ -19,6 +19,8 @@ ACTIONS = [
 ('MOVE W', [[1,0,0,0,0,-1],[0,1,0,0,0,0],[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,1]]),
 ]
 
+DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
+
 def read_map():
     global WIDTH, HEIGHT
     WIDTH, HEIGHT = [int(i) for i in input().split()]
@@ -82,6 +84,23 @@ class Pacman():
 
     def write_move(self):
         t = f'MOVE {self.id} {str(state[0])} {str(state[1])}'
+
+    @property
+    def coord(self):
+        return (self.y, self.x)
+
+def move(dir,pacman,board):
+    direction, y_drow, x_dcol = dir
+    x = (pacman.x + x_dcol) % WIDTH
+    y = (pacman.y + y_drow) % HEIGHT
+    if (y,x) not in board.legal :
+        return None
+    n1 = board.legal[(y,x)]
+    if len(n1.pacmans) != 0 :
+        return None
+    pacman = Pacman(pacman)
+    
+
 
 
 if __name__ == '__main__':
