@@ -20,6 +20,54 @@ ACTIONS = [
 ]
 
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
+NB_NODES = 0
+
+class Node():
+
+    def __init__(self,clone):
+        self.id = -1
+        self.coord = -1, -1
+        self.edges = {}
+
+    def __str__(self):
+        text = ''
+        for e1 in self.edges:
+            t = f'({e1.id},{e1.gain})'
+            text = t if text == '' else f'{text} : {t}'
+        return f'{self.id}' if text == '' else f'{self.id} - {text}'
+
+
+class BoardNodesAndEdges():
+
+    def __init__(self,clone):
+        self.nodes = {}
+        self.edges = []
+
+    def set_up(self,board):
+        for y_row in range(HEIGHT):
+            for x_col in range(WIDTH):
+                k_coord = y_row, x_col
+                if k_coord in board.legal :
+                    # Number way
+                    way = 0
+                    # Check direction
+                    for d1 in DIRS:
+                        dir, y_drow, x_dcol = d1
+                        yx_coord = (y_row + y_drow) % HEIGHT, (x_col + x_dcol)% WIDTH
+                        if yx_coord in board.legal :
+                            print('ICI')
+                            way += 1
+
+                    if way <= 2 :
+                        # EDGE
+                        pass
+                    else :
+                        # NODE
+                        n1 = Node()
+                        print(n1)
+                        n1.id = NB_NODES
+                        n1.coord = y_row, x_col
+                        self.nodes[n1.coord] = n1
 
 def read_map():
     global WIDTH, HEIGHT
@@ -69,9 +117,11 @@ class Pacman():
         self.id, self.mine = -1, -1
         self.out = ''
         self.state = None
+        self.x, self.y, self.type = state[0], state[1], state[2]
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
-            self.state = copy.copy(clone.state)
+            self.x, self.y, self.type = clone.x, clone.y, clone.type
+            #self.state = copy.copy(clone.state)
 
     def __str__(self):
         if self is None :
@@ -79,8 +129,9 @@ class Pacman():
         return f'({self.id,self.mine}) (x:{self.state[0]},y:{self.state[1]})'
 
     def update(self,state):
-        self.state = [int(i) for i in state]
-        self.state.append(1)
+        state = [int(i) for i in state]
+        state.append(1)
+        self.x, self.y, self.type = state[0], state[1], state[2]
 
     def write_move(self):
         t = f'MOVE {self.id} {str(state[0])} {str(state[1])}'
@@ -99,7 +150,7 @@ def move(dir,pacman,board):
     if len(n1.pacmans) != 0 :
         return None
     pacman = Pacman(pacman)
-    
+
 
 
 

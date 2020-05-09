@@ -12,4 +12,7 @@
 
 - [ ] @property
 
-**Search an idea**
+**Create node and create edge**
+
+- [ ] Find node
+- [ ] Create edge
