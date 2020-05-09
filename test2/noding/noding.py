@@ -15,7 +15,11 @@ from SpringChallenge2020 import BoardNodesAndEdges
 # Global
 
 # Method
+from SpringChallenge2020 import t_update_width_and_height
+
 import unittest
+
+t_update_width_and_height(WIDTH, HEIGHT)
 
 class _noding(unittest.TestCase):
 
@@ -27,9 +31,12 @@ class _noding(unittest.TestCase):
         kanban_board = PacBoard(None)
         kanban_board.set_up(PACMAN_MAP)
 
+        print(f'setup H {HEIGHT} W {WIDTH}')
+
         kanban_node = BoardNodesAndEdges(None)
         kanban_node.set_up(kanban_board)
 
+        return
         for n1 in kanban_node.nodes :
             print(n1)
 

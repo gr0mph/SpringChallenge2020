@@ -44,6 +44,7 @@ class BoardNodesAndEdges():
         self.edges = []
 
     def set_up(self,board):
+        global NB_NODES
         for y_row in range(HEIGHT):
             for x_col in range(WIDTH):
                 k_coord = y_row, x_col
@@ -55,7 +56,6 @@ class BoardNodesAndEdges():
                         dir, y_drow, x_dcol = d1
                         yx_coord = (y_row + y_drow) % HEIGHT, (x_col + x_dcol)% WIDTH
                         if yx_coord in board.legal :
-                            print('ICI')
                             way += 1
 
                     if way <= 2 :
@@ -63,9 +63,9 @@ class BoardNodesAndEdges():
                         pass
                     else :
                         # NODE
-                        n1 = Node()
-                        print(n1)
+                        n1 = Node(None)
                         n1.id = NB_NODES
+                        NB_NODES += 1
                         n1.coord = y_row, x_col
                         self.nodes[n1.coord] = n1
 
@@ -79,6 +79,10 @@ def read_map():
 def t_check_map(PACMAN_MAP):
     for i in range(HEIGHT):
         print(PACMAN_MAP[i],file=sys.stderr)
+
+def t_update_width_and_height(W,H):
+    global WIDTH, HEIGHT
+    WIDTH, HEIGHT = W, H
 
 class Box():
 
