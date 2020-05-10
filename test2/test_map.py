@@ -19,12 +19,19 @@ import unittest
 # PACMAN_MAP.append(list('### # ### # # ##### # # ### # ###'))
 # PACMAN_MAP.append(list('#################################'))
 
+# PACMAN_MAP = []
+# PACMAN_MAP.append(list('#### ####'))
+# PACMAN_MAP.append(list('#       #'))
+# PACMAN_MAP.append(list('# ##### #'))
+# PACMAN_MAP.append(list('    #    '))
+# PACMAN_MAP.append(list('#### ####'))
+
 PACMAN_MAP = []
-PACMAN_MAP.append(list('#########'))
-PACMAN_MAP.append(list('#       #'))
-PACMAN_MAP.append(list('# ##### #'))
-PACMAN_MAP.append(list('    #    '))
-PACMAN_MAP.append(list('#########'))
+PACMAN_MAP.append(list('#######'))
+PACMAN_MAP.append(list('#     #'))
+PACMAN_MAP.append(list('# # # #'))
+PACMAN_MAP.append(list('#     #'))
+PACMAN_MAP.append(list('### ###'))
 
 
 HEIGHT = len(PACMAN_MAP)

@@ -3,6 +3,7 @@ import math
 import copy
 import random
 import numpy as np
+import time
 
 pacman_board = {}
 
@@ -47,7 +48,7 @@ class Edge():
 
     def __str__(self):
         txt = f'K: {self.benefit}, viewed: {self.visited}'
-        for k1, a1 in self.direction:
+        for k1, a1 in self.direction.items():
             allay1 = "".join(str(c1) for c1 in a1)
             txt = f'{txt}, key {k1} [{allay1}]'
         return txt
@@ -72,34 +73,45 @@ class BoardNodesAndEdges():
                         yx_coord = (y_row + y_drow) % HEIGHT, (x_col + x_dcol)% WIDTH
                         if yx_coord in board.legal : way += 1
 
-                        if way <= 2 :
-                            self.allays.add( k_coord )
+                    if way <= 2 :
+                        self.allays.add( k_coord )
 
-                        else :
-                            n1 = Node(None)
-                            n1.id, n1.coord = NB_NODES, k_coord
-                            NB_NODES += 1
-                            self.nodes[k_coord] = n1
+                    else :
+                        n1 = Node(None)
+                        n1.id, n1.coord = NB_NODES, k_coord
+                        NB_NODES += 1
+                        self.nodes[k_coord] = n1
 
     def set_edges(self,edge,start,board):
         k_start = start
-        for edge1 in edge.direction[k_start][::-1]:
-            y1, x1 = edge1
+        while True :
+            y1, x1 = edge.direction[k_start][-1]
             find = False
+            time.sleep(0.1)
             for dir, y_drow, x_dcol in DIRS:
                 next_coord = (y1 + y_drow) % HEIGHT, (x1 + x_dcol)% WIDTH
                 if next_coord == start:
-                    pass
+                    continue
                 if next_coord in self.allays:
                     edge.allays.add(next_coord)
                     edge.direction[k_start].append(next_coord)
                     find = True
                     break
                 if next_coord in self.nodes:
-                    return yx_coord
+                    return next_coord, edge.direction[k_start][-1]
+
             if find == False :
-                return None
+                return None, None
             start = y1, x1
+
+    def set_allays(self):
+        result = {}
+        for e1 in self.edges:
+            for k1, path1 in e1.direction.items():
+                for allay1 in path1:
+                    if allay1 not in result:
+                        result[allay1] = e1
+        return result
 
     def set_up(self,board):
         self.set_nodes_allays(board)
@@ -113,12 +125,17 @@ class BoardNodesAndEdges():
                     e1 = Edge(None)
                     e1.direction[start_coord] = [yx_coord]
                     e1.allays.add( yx_coord )
-                    end_coord = self.set_edges(e1,start_coord,board)
-                    if end_coord is not None :
+                    end_coord, previous = self.set_edges(e1,start_coord,board)
+                    if previous is not None :
                         l1 = e1.direction[start_coord]
-                        e1.direction[end_coord] = l1.reverse()
-                        starting_edges.add(end_coord)
+                        l2 = copy.copy(l1)
+                        l2.reverse()
+                        e1.direction[end_coord] = l2
+                        starting_edges.add(previous)
+                    else :
+                        l1 = e1.direction[start_coord]
                     self.edges.append(e1)
+        self.allays = self.set_allays()
 
 def read_map():
     global WIDTH, HEIGHT
@@ -245,12 +262,6 @@ if __name__ == '__main__':
             pellet = [int(j) for j in input().split()]
 
             kanban_board.update_visible(pellet)
-
-
-
-
-        # Write an action using print
-        # To debug: print("Debug messages...", file=sys.stderr)
 
         # MOVE <pacId> <x> <y>
         print("MOVE 0 15 10")
