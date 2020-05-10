@@ -10,6 +10,7 @@ from test2.test_map import HEIGHT
 from SpringChallenge2020 import Box
 from SpringChallenge2020 import PacBoard
 from SpringChallenge2020 import Node
+from SpringChallenge2020 import Edge
 from SpringChallenge2020 import BoardNodesAndEdges
 
 # Global
@@ -36,7 +37,14 @@ class _noding(unittest.TestCase):
         kanban_node = BoardNodesAndEdges(None)
         kanban_node.set_up(kanban_board)
 
+        for e1 in kanban_node.edges:
+            print(e1)
+
         return
+        print(kanban_node.allays)
+        for _, n1 in kanban_node.nodes.items() :
+            print(n1)
+
         for n1 in kanban_node.nodes :
             print(n1)
 

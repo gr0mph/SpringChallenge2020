@@ -30,20 +30,36 @@ class Node():
         self.edges = {}
 
     def __str__(self):
+        y1, x1 = self.coord
         text = ''
         for e1 in self.edges:
             t = f'({e1.id},{e1.gain})'
             text = t if text == '' else f'{text} : {t}'
-        return f'{self.id}' if text == '' else f'{self.id} - {text}'
+        return f'({x1},{y1}), {self.id}' if text == '' else f'({x1},{y1}), {self.id} - {text}'
 
+class Edge():
+
+    def __init__(self,clone):
+        self.allays = set()
+        self.direction = {}
+        self.visited = False
+        self.benefit = 0
+
+    def __str__(self):
+        txt = f'K: {self.benefit}, viewed: {self.visited}'
+        for k1, a1 in self.direction:
+            allay1 = "".join(str(c1) for c1 in a1)
+            txt = f'{txt}, key {k1} [{allay1}]'
+        return txt
 
 class BoardNodesAndEdges():
 
     def __init__(self,clone):
         self.nodes = {}
+        self.allays = set()
         self.edges = []
 
-    def set_up(self,board):
+    def set_nodes_allays(self,board):
         global NB_NODES
         for y_row in range(HEIGHT):
             for x_col in range(WIDTH):
@@ -52,22 +68,57 @@ class BoardNodesAndEdges():
                     # Number way
                     way = 0
                     # Check direction
-                    for d1 in DIRS:
-                        dir, y_drow, x_dcol = d1
+                    for dir, y_drow, x_dcol in DIRS:
                         yx_coord = (y_row + y_drow) % HEIGHT, (x_col + x_dcol)% WIDTH
-                        if yx_coord in board.legal :
-                            way += 1
+                        if yx_coord in board.legal : way += 1
 
-                    if way <= 2 :
-                        # EDGE
-                        pass
-                    else :
-                        # NODE
-                        n1 = Node(None)
-                        n1.id = NB_NODES
-                        NB_NODES += 1
-                        n1.coord = y_row, x_col
-                        self.nodes[n1.coord] = n1
+                        if way <= 2 :
+                            self.allays.add( k_coord )
+
+                        else :
+                            n1 = Node(None)
+                            n1.id, n1.coord = NB_NODES, k_coord
+                            NB_NODES += 1
+                            self.nodes[k_coord] = n1
+
+    def set_edges(self,edge,start,board):
+        k_start = start
+        for edge1 in edge.direction[k_start][::-1]:
+            y1, x1 = edge1
+            find = False
+            for dir, y_drow, x_dcol in DIRS:
+                next_coord = (y1 + y_drow) % HEIGHT, (x1 + x_dcol)% WIDTH
+                if next_coord == start:
+                    pass
+                if next_coord in self.allays:
+                    edge.allays.add(next_coord)
+                    edge.direction[k_start].append(next_coord)
+                    find = True
+                    break
+                if next_coord in self.nodes:
+                    return yx_coord
+            if find == False :
+                return None
+            start = y1, x1
+
+    def set_up(self,board):
+        self.set_nodes_allays(board)
+        starting_edges = set()
+        for _, n1 in self.nodes.items():
+            start_y, start_x = start_coord = n1.coord
+            for dir, y_drow, x_dcol in DIRS:
+                yx_coord = (start_y + y_drow) % HEIGHT, (start_x + x_dcol)% WIDTH
+                if yx_coord in self.allays and yx_coord not in starting_edges:
+                    starting_edges.add(yx_coord)
+                    e1 = Edge(None)
+                    e1.direction[start_coord] = [yx_coord]
+                    e1.allays.add( yx_coord )
+                    end_coord = self.set_edges(e1,start_coord,board)
+                    if end_coord is not None :
+                        l1 = e1.direction[start_coord]
+                        e1.direction[end_coord] = l1.reverse()
+                        starting_edges.add(end_coord)
+                    self.edges.append(e1)
 
 def read_map():
     global WIDTH, HEIGHT
