@@ -37,19 +37,12 @@ class _noding(unittest.TestCase):
         kanban_node = BoardNodesAndEdges(None)
         kanban_node.set_up(kanban_board)
 
-        print(kanban_node.allays)
         for _, n1 in kanban_node.nodes.items() :
             print(n1)
         for e1 in kanban_node.edges:
             print(e1)
 
         return
-        print(kanban_node.allays)
-        for _, n1 in kanban_node.nodes.items() :
-            print(n1)
-
-        for n1 in kanban_node.nodes :
-            print(n1)
 
 
 if __name__ == '__main__':

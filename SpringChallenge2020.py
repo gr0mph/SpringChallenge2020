@@ -28,13 +28,13 @@ class Node():
     def __init__(self,clone):
         self.id = -1
         self.coord = -1, -1
-        self.edges = {}
+        self.edges = []
 
     def __str__(self):
         y1, x1 = self.coord
         text = ''
-        for e1 in self.edges:
-            t = f'({e1.id},{e1.gain})'
+        for n1, e1 in self.edges:
+            t = f'({n1.coord},{e1.direction[n1.coord]})'
             text = t if text == '' else f'{text} : {t}'
         return f'({x1},{y1}), {self.id}' if text == '' else f'({x1},{y1}), {self.id} - {text}'
 
@@ -87,7 +87,7 @@ class BoardNodesAndEdges():
         while True :
             y1, x1 = edge.direction[k_start][-1]
             find = False
-            time.sleep(0.1)
+            #time.sleep(0.1)
             for dir, y_drow, x_dcol in DIRS:
                 next_coord = (y1 + y_drow) % HEIGHT, (x1 + x_dcol)% WIDTH
                 if next_coord == start:
@@ -131,9 +131,15 @@ class BoardNodesAndEdges():
                         l2 = copy.copy(l1)
                         l2.reverse()
                         e1.direction[end_coord] = l2
+
+                        n1.edges.append( (self.nodes[end_coord],e1) )
+                        self.nodes[end_coord].edges.append( (n1,e1) )
+
                         starting_edges.add(previous)
                     else :
                         l1 = e1.direction[start_coord]
+                        n1.edges.append( (n1,e1) )
+
                     self.edges.append(e1)
         self.allays = self.set_allays()
 
@@ -189,7 +195,7 @@ class Pacman():
         self.id, self.mine = -1, -1
         self.out = ''
         self.state = None
-        self.x, self.y, self.type = state[0], state[1], state[2]
+        self.x, self.y, self.type = 0,0,0#state[0], state[1], state[2]
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
             self.x, self.y, self.type = clone.x, clone.y, clone.type
@@ -206,7 +212,9 @@ class Pacman():
         self.x, self.y, self.type = state[0], state[1], state[2]
 
     def write_move(self):
-        t = f'MOVE {self.id} {str(state[0])} {str(state[1])}'
+        #t = f'MOVE {self.id} {str(state[0])} {str(state[1])}'
+        t = f'MOVE {self.id} {str(self.x)} {str(self.y)}'
+        return t
 
     @property
     def coord(self):
@@ -232,6 +240,14 @@ if __name__ == '__main__':
 
     kanban_board = PacBoard(None)
     kanban_board.set_up(PACMAN_MAP)
+
+    kanban_node = BoardNodesAndEdges(None)
+    kanban_node.set_up(kanban_board)
+
+    knot_to_reach = next(iter(kanban_node.nodes))
+    init = True
+    current_dir = None
+    final_node = None
 
     while True:
         my_score, opponent_score = [int(i) for i in input().split()]
@@ -263,5 +279,34 @@ if __name__ == '__main__':
 
             kanban_board.update_visible(pellet)
 
-        # MOVE <pacId> <x> <y>
-        print("MOVE 0 15 10")
+        for p1 in pacman_board:
+            if p1.mine == OPP:
+                continue
+
+            k_coord = p1.y, p1.x
+            if k_coord in kanban_node.nodes:
+                init = False
+                for n1, list_d1 in kanban_node.nodes[k_coord] :
+                    final_node = n1
+                    current_dir = list_d1
+                    next_coord = next(current_direction)
+                    next_pacman.y, next_pacman.x = next_coord
+                    out = next_pacman.write_move()
+                    break
+
+            elif init == True :
+                next_pacman = Pacman(p1)
+                next_pacman.y, next_pacman.x = knot_to_reach.coord
+                out = next_pacman.write_move()
+
+            else :
+                try:
+                    next_coord = next(current_direction)
+                except:
+                    next_coord = final_node
+                next_pacman = Pacman(p1)
+                next_pacman.y, next_pacman.x = next_coord
+                out = next_pacman.write_move()
+
+        #print("MOVE 0 15 10")
+        print(out)
