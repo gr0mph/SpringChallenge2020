@@ -231,9 +231,6 @@ def move(dir,pacman,board):
         return None
     pacman = Pacman(pacman)
 
-
-
-
 if __name__ == '__main__':
     read_map()
     t_check_map(PACMAN_MAP)

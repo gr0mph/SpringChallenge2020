@@ -12,6 +12,7 @@ from SpringChallenge2020 import PacBoard
 from SpringChallenge2020 import Node
 from SpringChallenge2020 import Edge
 from SpringChallenge2020 import BoardNodesAndEdges
+from SpringChallenge2020 import Pacman
 
 # Global
 
@@ -28,7 +29,7 @@ class _noding(unittest.TestCase):
         kanban_board = PacBoard(None)
         kanban_board.set_up(PACMAN_MAP)
 
-    def test__node(self):
+    def __node(self):
         kanban_board = PacBoard(None)
         kanban_board.set_up(PACMAN_MAP)
 
@@ -43,6 +44,17 @@ class _noding(unittest.TestCase):
             print(e1)
 
         return
+
+    def test_find_node_or_edge(self):
+        kanban_board = PacBoard(None)
+        kanban_board.set_up(PACMAN_MAP)
+
+        kanban_node = BoardNodesAndEdges(None)
+        kanban_node.set_up(kanban_board)
+
+        pacman = Pacman(None)
+        pacman.x, pacman.y, pacman.type = 3, 2, 'NEUTRAL'
+
 
 
 if __name__ == '__main__':
