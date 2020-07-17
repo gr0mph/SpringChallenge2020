@@ -47,7 +47,7 @@ class Edge():
         self.benefit = 0
 
     def __str__(self):
-        txt = f'K: {self.benefit}, viewed: {self.visited}'
+        txt = f'K(gain): {self.benefit}, viewed: {self.visited}'
         for k1, a1 in self.direction.items():
             allay1 = "".join(str(c1) for c1 in a1)
             txt = f'{txt}, key {k1} [{allay1}]'
