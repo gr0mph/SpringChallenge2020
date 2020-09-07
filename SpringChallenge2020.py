@@ -34,9 +34,9 @@ class Node():
         y1, x1 = self.coord
         text = ''
         for n1, e1 in self.edges:
-            t = f'({n1.coord},{e1.direction[n1.coord]})'
+            t = f'\nN({n1.coord}),E({e1.direction[n1.coord]})'
             text = t if text == '' else f'{text} : {t}'
-        return f'({x1},{y1}), {self.id}' if text == '' else f'({x1},{y1}), {self.id} - {text}'
+        return f'COORD ({x1},{y1}), ID {self.id}' if text == '' else f'COORD ({x1},{y1}), ID {self.id} {text}'
 
 class Edge():
 
@@ -152,7 +152,7 @@ def read_map():
 
 def t_check_map(PACMAN_MAP):
     for i in range(HEIGHT):
-        print(PACMAN_MAP[i],file=sys.stderr)
+        print("".join(PACMAN_MAP[i]),file=sys.stderr)
 
 def t_update_width_and_height(W,H):
     global WIDTH, HEIGHT
@@ -184,7 +184,7 @@ class PacBoard():
         b1.value = pellet
 
     def update_pacman(self, pacman):
-        k_coord = pacman.state[1], pacman.state[0]
+        k_coord = pacman.y, pacman.x
         b1 = self.legal[ k_coord ]
         b1.pacmans.append(pacman)
 
@@ -204,7 +204,7 @@ class Pacman():
     def __str__(self):
         if self is None :
             return 'Pacman None...'
-        return f'({self.id,self.mine}) (x:{self.state[0]},y:{self.state[1]})'
+        return f'({self.id,self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
 
     def update(self,state):
         state = [int(i) for i in state]
@@ -252,9 +252,14 @@ if __name__ == '__main__':
         for i in range(visible_pac_count):
             #state_in = [int(i) for i in input().split()]
             state_in = input().split()
+            #print(f'STATE_IN: {state_in}',file=sys.stderr)
             state_in[4] = TYPE_SET[state_in[4]]
 
             pacman_id, mine = state_in[0], state_in[1]
+            if mine == OPP :
+                # Create a unique ID for each pacman
+                pacman_id = pacman_id + visible_pac_count
+            #print(f'ID: {pacman_id}',file=sys.stderr)
             if pacman_id in pacman_board :
                 pacman_board[pacman_id].update(state_in[2:])
 
@@ -268,7 +273,7 @@ if __name__ == '__main__':
             kanban_board.update_pacman(pacman_board[pacman_id])
 
         visible_pellet_count = int(input())  # all pellets in sight
-        print(visible_pellet_count,file=sys.stderr)
+        print(f'PELLET {visible_pellet_count}',file=sys.stderr)
         for i in range(visible_pellet_count):
             # value: amount of points this pellet is worth
             #x, y, value = [int(j) for j in input().split()]
@@ -276,32 +281,56 @@ if __name__ == '__main__':
 
             kanban_board.update_visible(pellet)
 
-        for p1 in pacman_board:
+        for k1, p1 in pacman_board.items():
+            print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
             if p1.mine == OPP:
                 continue
+
+            next_pacman = Pacman(p1)
 
             k_coord = p1.y, p1.x
             if k_coord in kanban_node.nodes:
                 init = False
-                for n1, list_d1 in kanban_node.nodes[k_coord] :
-                    final_node = n1
-                    current_dir = list_d1
-                    next_coord = next(current_direction)
-                    next_pacman.y, next_pacman.x = next_coord
-                    out = next_pacman.write_move()
-                    break
+                print(kanban_node.nodes[k_coord],file=sys.stderr)
+                #for n1, list_d1 in kanban_node.nodes[k_coord] :
+                #    final_node = n1
+                #    current_dir = list_d1
+                #    next_coord = next(current_dir)
+                #    next_pacman.y, next_pacman.x = next_coord
+                #    out = next_pacman.write_move()
+                #    break
+
+                n1 = kanban_node.nodes[k_coord]
+                for n2, e2 in n1.edges:
+                    # There is a bug here but don't care now...
+                    if e2.visited == False :
+                        e2.visited = True
+                        final_node = n2
+                        break
+
+                next_coord = final_node.coord
+                next_pacman.y, next_pacman.x = next_coord
+                out = next_pacman.write_move()
+
+                #for _, n1 in kanban_node.nodes.items() :
+                #    final_node = n1
+                #    next_coord = n1.coord
+                #    next_pacman.y, next_pacman.x = next_coord
+                #    out = next_pacman.write_move()
+                #    break
 
             elif init == True :
                 next_pacman = Pacman(p1)
-                next_pacman.y, next_pacman.x = knot_to_reach.coord
+                print(knot_to_reach,file=sys.stderr)
+                next_pacman.y, next_pacman.x = knot_to_reach
                 out = next_pacman.write_move()
 
             else :
-                try:
-                    next_coord = next(current_direction)
-                except:
-                    next_coord = final_node
-                next_pacman = Pacman(p1)
+                #try:
+                #    next_coord = next(current_dir)
+                #except:
+                next_coord = final_node.coord
+
                 next_pacman.y, next_pacman.x = next_coord
                 out = next_pacman.write_move()
 

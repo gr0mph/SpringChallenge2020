@@ -29,7 +29,7 @@ class _noding(unittest.TestCase):
         kanban_board = PacBoard(None)
         kanban_board.set_up(PACMAN_MAP)
 
-    def _node(self):
+    def test_node(self):
         kanban_board = PacBoard(None)
         kanban_board.set_up(PACMAN_MAP)
 
@@ -53,7 +53,7 @@ class _noding(unittest.TestCase):
 
         return
 
-    def test_find_node_or_edge(self):
+    def _find_node_or_edge(self):
         kanban_board = PacBoard(None)
         kanban_board.set_up(PACMAN_MAP)
 
@@ -85,6 +85,8 @@ class _noding(unittest.TestCase):
         if yx_coord in kanban_node.allays:
             e1 = kanban_node.allays[yx_coord]
             print(e1)
+
+
 
 if __name__ == '__main__':
     unittest.main()
