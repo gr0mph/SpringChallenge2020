@@ -18,9 +18,11 @@ PAC_INIT_WAY = 0
 def read_map():
     global WIDTH, HEIGHT
     WIDTH, HEIGHT = [int(i) for i in input().split()]
+    print(f'WIDTH {WIDTH} HEIGHT {HEIGHT}', file=sys.stderr)
     global PACMAN_MAP
     for i in range(HEIGHT):
         PACMAN_MAP.append(list(input()))
+
 
 
 class Case():
@@ -120,7 +122,7 @@ class BoardNodesAndEdges():
                 k_case.edges.append(edge)
                 self.find_next2_case(k_coord,k_case,way,edge)
 
-            print()
+            #print()
 
     def find_next2_case(self,prev_coord,prev_case,prev_way,edge):
         y_row,  x_col = prev_coord
@@ -189,7 +191,7 @@ class BoardNodesAndEdges():
 
             new_pacman.index = new_pacman.index + new_pacman.way
             new_pacman.x, new_pacman.y = edge.allays[new_pacman.index].coord
-            yield new_pacman
+            return new_pacman
         elif pacmine_coord in self.nodes :
             max_index, index = -1, 0
             max_pellet, pellet = -1, 0
@@ -212,7 +214,7 @@ class BoardNodesAndEdges():
             new_pacman.index = new_pacman.index + new_pacman.way
             edge = self.nodes[pacmine_coord].edges[max_index]
             new_pacman.x, new_pacman.y = edge.allays[new_pacman.index].coord
-            yield new_pacman
+            return new_pacman
 
 
 class Pacman():
@@ -252,7 +254,10 @@ def t_update_width_and_height(W,H):
     WIDTH, HEIGHT = W, H
 
 if __name__ == '__main__':
-    read_map()
+    WIDTH, HEIGHT = [int(i) for i in input().split()]
+    print(f'WIDTH {WIDTH} HEIGHT {HEIGHT}', file=sys.stderr)
+    for i in range(HEIGHT):
+        PACMAN_MAP.append(list(input()))
 
     kanban_node = BoardNodesAndEdges(None)
     kanban_node.set_up(PACMAN_MAP)
@@ -260,47 +265,58 @@ if __name__ == '__main__':
     pacman_board = {}
 
     while True:
-        my_score, opponent_score = [int(i) for i in input().split()]
+        # 1
+        mine_score, opp_score = [int(i) for i in input().split()]
+        print(f'mine_score {mine_score} opp_score {opp_score}',file=sys.stderr)
+
+        # 2
         visible_pac_count = int(input())  # all your pacs and enemy pacs in sight
+        print(f'PACMAN {visible_pac_count}', file=sys.stderr)
         for i in range(visible_pac_count):
             state_in = input().split()
             state_in[4] = TYPE_SET[state_in[4]]
 
-            pacman_id, mine = state_in[0], state_in[1]
+            pacman_id, mine = int(state_in[0]), int(state_in[1])
             if mine == OPP :
                 # Create a unique ID for each pacman
                 pacman_id = pacman_id + visible_pac_count
-                if pacman_id in pacman_board :
-                    pacman_board[pacman_id].update(state_in[2:])
 
-                else :
-                    pacman_new = Pacman(None)
-                    pacman_new.id, pacman_new.mine = pacman_id, mine
-                    pacman_board[pacman_id] = pacman_new
-                    pacman_board[pacman_id].update(state_in[2:])
+            if pacman_id in pacman_board :
+                pacman_board[pacman_id].update(state_in[2:])
 
-            visible_pellet_count = int(input())  # all pellets in sight
-            print(f'PELLET {visible_pellet_count}',file=sys.stderr)
-            for i in range(visible_pellet_count):
-                pellet_line = [int(j) for j in input().split()]
-                pellet_x, pellet_y, pellet = pellet_line[0],pellet_line[1],pellet_line[2]
-                pellet_coord = pellet_y, pellet_x
-                if pellet_coord in kanban_node.nodes:
-                    kanban_node.nodes[pellet_coord].pellet = pellet
-                elif pellet_coord in kanban_node.cases:
-                    kanban_node.cases[pellet_coord].pellet = pellet
+            else :
+                pacman_new = Pacman(None)
+                pacman_new.id, pacman_new.mine = pacman_id, mine
+                pacman_board[pacman_id] = pacman_new
+                pacman_board[pacman_id].update(state_in[2:])
 
-            for k1, p1 in pacman_board.items():
-                print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
-                if p1.mine == OPP:
-                    kanban_node.opp = p1
-                    continue
+        # 3
+        visible_pellet_count = int(input())  # all pellets in sight
+        print(f'PELLET {visible_pellet_count}',file=sys.stderr)
+        for i in range(visible_pellet_count):
+            pellet_line = [int(j) for j in input().split()]
+            pellet_x, pellet_y, pellet = pellet_line[0],pellet_line[1],pellet_line[2]
+            pellet_coord = pellet_y, pellet_x
+            if pellet_coord in kanban_node.nodes:
+                kanban_node.nodes[pellet_coord].pellet = pellet
+            elif pellet_coord in kanban_node.cases:
+                kanban_node.cases[pellet_coord].pellet = pellet
 
-                else:
-                    kanban_node.mine = p1
-                    continue
+        # TREATMENT
+        for k1, p1 in pacman_board.items():
+            print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
+            if p1.mine == OPP:
+                kanban_node.opp = p1
+                continue
 
+            else:
+                kanban_node.mine = p1
+                continue
+
+        # OUT
         iter = iter(kanban_node)
-        next_pacman = next(iter(kanban_node))
+        next_pacman = next(kanban_node)
         out = next_pacman.write_move()
         print(out)
+        #print("MOVE 0 5 5")
+        #a = 0 / 0
