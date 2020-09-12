@@ -245,6 +245,7 @@ if __name__ == '__main__':
     init = True
     current_dir = None
     final_node = None
+    no_new_allay = False
 
     while True:
         my_score, opponent_score = [int(i) for i in input().split()]
@@ -281,6 +282,7 @@ if __name__ == '__main__':
 
             kanban_board.update_visible(pellet)
 
+
         for k1, p1 in pacman_board.items():
             print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
             if p1.mine == OPP:
@@ -289,8 +291,10 @@ if __name__ == '__main__':
             next_pacman = Pacman(p1)
 
             k_coord = p1.y, p1.x
+
             if k_coord in kanban_node.nodes:
                 init = False
+                current_dir = None
                 print(kanban_node.nodes[k_coord],file=sys.stderr)
                 #for n1, list_d1 in kanban_node.nodes[k_coord] :
                 #    final_node = n1
@@ -305,10 +309,22 @@ if __name__ == '__main__':
                     # There is a bug here but don't care now...
                     if e2.visited == False :
                         e2.visited = True
+                        print(e2.direction,file=sys.stderr)
+                        print(n2,file=sys.stderr)
+                        current_dir = iter(e2.direction[n2.coord])
                         final_node = n2
                         break
 
-                next_coord = final_node.coord
+                if current_dir is None :
+                    for e1 in kanban_node.edges:
+                        if e1.visited == False:
+                            e1.visited = True
+                            for k1, a1 in e1.direction.items():
+                                final_node = k1
+                                current_dir = iter(a1)
+                                no_new_allay = True
+
+                next_coord = next(current_dir)
                 next_pacman.y, next_pacman.x = next_coord
                 out = next_pacman.write_move()
 
@@ -325,11 +341,26 @@ if __name__ == '__main__':
                 next_pacman.y, next_pacman.x = knot_to_reach
                 out = next_pacman.write_move()
 
+            elif no_new_allay == True:
+                if k_coord == next_coord :
+                    try:
+                        next_coord = next(current_dir)
+                    except:
+                        next_coord = final_node.coord
+
+                    next_pacman.y, next_pacman.x = next_coord
+                    out = next_pacman.write_move()
+                    no_new_allay = False
+
+                else:
+                    next_pacman.y, next_pacman.x = next_coord
+                    out = next_pacman.write_move()
+
             else :
-                #try:
-                #    next_coord = next(current_dir)
-                #except:
-                next_coord = final_node.coord
+                try:
+                    next_coord = next(current_dir)
+                except:
+                    next_coord = final_node.coord
 
                 next_pacman.y, next_pacman.x = next_coord
                 out = next_pacman.write_move()
