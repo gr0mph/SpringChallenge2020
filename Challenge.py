@@ -12,6 +12,8 @@ EMPTY_SYMBOLS = ' '
 TYPE_SET = { 'NEUTRAL' : 0 }
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 NB_NODES = 0
+PAC_INIT_INDEX = -1
+PAC_INIT_WAY = 0
 
 def read_map():
     global WIDTH, HEIGHT
@@ -26,11 +28,13 @@ class Case():
         self.id = -1
         self.coord = -1, -1     #   row or y,   col or x
         self.refer = None
+        self.pellet = 0
         self.way = []
         if clone is not None:
             self.id = clone.id
             self.coord = clone.coord
             self.refer = clone.refer
+            self.pellet = clone.pellet
             self.way = copy.copy(clone.way)
 
     def __str__(self):
@@ -65,6 +69,8 @@ class BoardNodesAndEdges():
         self.nodes = {}     #   Case
         self.cases = {}     #   Case
         self.edges = []
+        self.opp = None
+        self.mine = None
 
     def __str__(self):
         return 'Dictionary of Nodes and Edges'
@@ -164,9 +170,137 @@ class BoardNodesAndEdges():
         self.set_cases(board)
         self.set_nodes_and_edges(board)
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        pacopp_coord = self.opp.coord
+        pacmine_coord = self.mine.coord
+        if pacmine_coord in self.cases :
+            edge = self.cases[pacmine_coord].refer
+            if self.mine.index == PAC_INIT_INDEX :
+                for i1 in range(len(edge.allays)):
+                    if pacmine_coord == edge.allays[i1].coord :
+                        self.mine.index = i1
+                        self.mine.way = 1
+                new_pacman = Pacman(self.mine)
+            else :
+                new_pacman = Pacman(self.mine)
+
+            new_pacman.index = new_pacman.index + new_pacman.way
+            new_pacman.x, new_pacman.y = edge.allays[new_pacman.index].coord
+            yield new_pacman
+        elif pacmine_coord in self.nodes :
+            max_index, index = -1, 0
+            max_pellet, pellet = -1, 0
+            for e1 in self.nodes[pacmine_coord].edges:
+                pellet = 0
+                for c1 in e1.allays:
+                    pellet = pellet + c1.pellet
+                if pellet > max_pellet:
+                    max_pellet, max_index = pellet, index
+                index = index + 1
+            # Determine Way
+            e1 = self.nodes[pacmine_coord].edges[max_index]
+            if pacmine_coord == self.nodes[pacmine_coord].edges[max_index].allays[0].coord:
+                self.mine.way = 1
+                self.mine.index = 0
+            else :
+                self.mine.way = -1
+                self.mine.index = len(self.nodes[pacmine_coord].edges[max_index].allays) - 1
+            new_pacman = Pacman(self.mine)
+            new_pacman.index = new_pacman.index + new_pacman.way
+            edge = self.nodes[pacmine_coord].edges[max_index]
+            new_pacman.x, new_pacman.y = edge.allays[new_pacman.index].coord
+            yield new_pacman
+
+
+class Pacman():
+
+    def __init__(self,clone):
+        self.id, self.mine = -1, -1
+        self.out = ''
+        self.state = None
+        self.x, self.y, self.type = 0,0,0
+        self.index = PAC_INIT_INDEX                                 # Index in the edge
+        self.way = PAC_INIT_WAY                                    # Way in the edge
+        if clone is not None :
+            self.id, self.mine = clone.id, clone.mine
+            self.x, self.y, self.type = clone.x, clone.y, clone.type
+            self.index, self.way = clone.index, clone.way
+
+    def __str__(self):
+        if self is None :
+            return 'Pacman None...'
+        return f'({self.id,self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
+
+    def update(self,state):
+        state = [int(i) for i in state]
+        state.append(1)
+        self.x, self.y, self.type = state[0], state[1], state[2]
+
+    def write_move(self):
+        t = f'MOVE {self.id} {str(self.x)} {str(self.y)}'
+        return t
+
+    @property
+    def coord(self):
+        return (self.y, self.x)
+
 def t_update_width_and_height(W,H):
     global WIDTH, HEIGHT
     WIDTH, HEIGHT = W, H
 
 if __name__ == '__main__':
     read_map()
+
+    kanban_node = BoardNodesAndEdges(None)
+    kanban_node.set_up(PACMAN_MAP)
+
+    pacman_board = {}
+
+    while True:
+        my_score, opponent_score = [int(i) for i in input().split()]
+        visible_pac_count = int(input())  # all your pacs and enemy pacs in sight
+        for i in range(visible_pac_count):
+            state_in = input().split()
+            state_in[4] = TYPE_SET[state_in[4]]
+
+            pacman_id, mine = state_in[0], state_in[1]
+            if mine == OPP :
+                # Create a unique ID for each pacman
+                pacman_id = pacman_id + visible_pac_count
+                if pacman_id in pacman_board :
+                    pacman_board[pacman_id].update(state_in[2:])
+
+                else :
+                    pacman_new = Pacman(None)
+                    pacman_new.id, pacman_new.mine = pacman_id, mine
+                    pacman_board[pacman_id] = pacman_new
+                    pacman_board[pacman_id].update(state_in[2:])
+
+            visible_pellet_count = int(input())  # all pellets in sight
+            print(f'PELLET {visible_pellet_count}',file=sys.stderr)
+            for i in range(visible_pellet_count):
+                pellet_line = [int(j) for j in input().split()]
+                pellet_x, pellet_y, pellet = pellet_line[0],pellet_line[1],pellet_line[2]
+                pellet_coord = pellet_y, pellet_x
+                if pellet_coord in kanban_node.nodes:
+                    kanban_node.nodes[pellet_coord].pellet = pellet
+                elif pellet_coord in kanban_node.cases:
+                    kanban_node.cases[pellet_coord].pellet = pellet
+
+            for k1, p1 in pacman_board.items():
+                print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
+                if p1.mine == OPP:
+                    kanban_node.opp = p1
+                    continue
+
+                else:
+                    kanban_node.mine = p1
+                    continue
+
+        iter = iter(kanban_node)
+        next_pacman = next(iter(kanban_node))
+        out = next_pacman.write_move()
+        print(out)
