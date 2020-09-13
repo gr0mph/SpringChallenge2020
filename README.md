@@ -6,13 +6,15 @@
 
 **No idea**
 
-- [ ] Create basic class
-
 **Do a getter for pacman state**
 
 - [ ] @property
 
 **Create node and create edge**
 
-- [ ] Find node
-- [ ] Create edge
+- [x] Find node
+- [x] Create edge
+
+**Add a simple iterator to get next move**
+
+- [ ] Coding and testing

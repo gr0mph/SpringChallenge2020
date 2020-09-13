@@ -176,23 +176,37 @@ class BoardNodesAndEdges():
         return self
 
     def __next__(self):
-        pacopp_coord = self.opp.coord
-        pacmine_coord = self.mine.coord
+        pacopp_y, pacopp_x = pacopp_coord = self.opp.coord
+        pacmine_y, pacmine_x = pacmine_coord = self.mine.coord
+        #print(f'pacmine_coord x {pacmine_x} y {pacmine_y} pacopp_coord x {pacopp_x} y {pacopp_y}')
         if pacmine_coord in self.cases :
+            #print(f'CASE {self.cases[pacmine_coord]}')
             edge = self.cases[pacmine_coord].refer
             if self.mine.index == PAC_INIT_INDEX :
                 for i1 in range(len(edge.allays)):
+                    #print(f'SEARCH {edge.allays[i1]} INDEX {i1}')
                     if pacmine_coord == edge.allays[i1].coord :
+                        #print(f'FINDED {edge.allays[i1]} INDEX {i1}')
                         self.mine.index = i1
                         self.mine.way = 1
+                        break
                 new_pacman = Pacman(self.mine)
             else :
                 new_pacman = Pacman(self.mine)
 
+            #print(f'INDEX {new_pacman.index}')
+            #print(f'EDGE {edge}')
+            #print()
+
             new_pacman.index = new_pacman.index + new_pacman.way
-            new_pacman.x, new_pacman.y = edge.allays[new_pacman.index].coord
+            #print(f'_NEXT_ {edge.allays[new_pacman.index]} INDEX {new_pacman.index}')
+            #print()
+
+            new_pacman.y , new_pacman.x = edge.allays[new_pacman.index].coord
             return new_pacman
+
         elif pacmine_coord in self.nodes :
+            #print('NODE')
             max_index, index = -1, 0
             max_pellet, pellet = -1, 0
             for e1 in self.nodes[pacmine_coord].edges:
@@ -213,9 +227,8 @@ class BoardNodesAndEdges():
             new_pacman = Pacman(self.mine)
             new_pacman.index = new_pacman.index + new_pacman.way
             edge = self.nodes[pacmine_coord].edges[max_index]
-            new_pacman.x, new_pacman.y = edge.allays[new_pacman.index].coord
+            new_pacman.y , new_pacman.x = edge.allays[new_pacman.index].coord
             return new_pacman
-
 
 class Pacman():
 
@@ -304,7 +317,7 @@ if __name__ == '__main__':
 
         # TREATMENT
         for k1, p1 in pacman_board.items():
-            print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
+            #print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
             if p1.mine == OPP:
                 kanban_node.opp = p1
                 continue
@@ -314,9 +327,6 @@ if __name__ == '__main__':
                 continue
 
         # OUT
-        iter = iter(kanban_node)
-        next_pacman = next(kanban_node)
+        next_pacman = next(iter(kanban_node))
         out = next_pacman.write_move()
         print(out)
-        #print("MOVE 0 5 5")
-        #a = 0 / 0
