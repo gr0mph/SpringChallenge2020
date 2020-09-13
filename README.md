@@ -4,6 +4,8 @@
 
 ***Coding Game Spring Challenge 2020***
 
+![](picture/league_wood.png)
+
 **No idea**
 
 **Do a getter for pacman state**
@@ -17,4 +19,5 @@
 
 **Add a simple iterator to get next move**
 
-- [ ] Coding and testing
+- [x] Coding and testing
+- [x] Add multiple pacman

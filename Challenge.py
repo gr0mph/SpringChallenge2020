@@ -190,7 +190,7 @@ class BoardNodesAndEdges():
     def __iter__(self):
         return self
 
-    def find_next_move(self,mine):
+    def find_next_move(self,mine,others):
         #pacopp_y, pacopp_x = pacopp_coord = self.opp.coord
         pacmine_y, pacmine_x = pacmine_coord = mine.coord
         #print(f'pacmine_coord x {pacmine_x} y {pacmine_y} pacopp_coord x {pacopp_x} y {pacopp_y}')
@@ -209,8 +209,8 @@ class BoardNodesAndEdges():
             else :
                 new_pacman = Pacman(mine)
 
-            print(f'INDEX {new_pacman.index}',file=sys.stderr)
-            print(f'EDGE {edge}',file=sys.stderr)
+            #print(f'INDEX {new_pacman.index}',file=sys.stderr)
+            #print(f'EDGE {edge}',file=sys.stderr)
             #print()
 
             new_pacman.index = new_pacman.index + new_pacman.way
@@ -222,10 +222,16 @@ class BoardNodesAndEdges():
 
         elif pacmine_coord in self.nodes :
             #print('NODE')
+            mine.edge = None
             max_index, index = -1, 0
             max_pellet, pellet = -1, 0
+            forbid_edges =  [ p1.edge for p1 in others if p1.edge is not None]
+
             for e1 in self.nodes[pacmine_coord].edges:
                 pellet = 0
+                if e1 in forbid_edges :
+                    continue
+
                 for c1 in e1.allays:
                     pellet = pellet + c1.pellet
                 if pellet > max_pellet:
@@ -233,9 +239,10 @@ class BoardNodesAndEdges():
                 index = index + 1
 
             print(f'NODE max PELLET {max_pellet} max INDEX {max_index}',file=sys.stderr)
-            print(f'EDGE {self.nodes[pacmine_coord].edges[max_index]}',file=sys.stderr)
+            #print(f'EDGE {self.nodes[pacmine_coord].edges[max_index]}',file=sys.stderr)
             # Determine Way
             e1 = self.nodes[pacmine_coord].edges[max_index]
+            mine.edge = e1
             if pacmine_coord == self.nodes[pacmine_coord].edges[max_index].allays[0].coord:
                 mine.way = 1
                 mine.index = 0
@@ -251,7 +258,7 @@ class BoardNodesAndEdges():
     def __next__(self):
         mines = []
         for _, mine in self.mine.items():
-            p1 = self.find_next_move(mine)
+            p1 = self.find_next_move(mine, self.mine.values() )
             mines.append(p1)
         return mines
 
@@ -264,10 +271,12 @@ class Pacman():
         self.x, self.y, self.type = 0,0,0
         self.index = PAC_INIT_INDEX                                 # Index in the edge
         self.way = PAC_INIT_WAY                                    # Way in the edge
+        self.edge = None
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
             self.x, self.y, self.type = clone.x, clone.y, clone.type
             self.index, self.way = clone.index, clone.way
+            self.edge = clone.edge
 
     def __str__(self):
         if self is None :
@@ -279,9 +288,11 @@ class Pacman():
         state.append(1)
         self.x, self.y, self.type = state[0], state[1], state[2]
 
-    def correction(self,next):
+    def correction(self,next,prev):
         if self.coord == next.coord :
             self.index, self.way = next.index, next.way
+        elif self.coord == prev.coord :
+            self.way = 1 if self.way == -1 else -1
 
     def write_move(self,intext):
         t = f'MOVE {self.id} {str(self.x)} {str(self.y)}'
@@ -291,6 +302,10 @@ class Pacman():
     @property
     def coord(self):
         return (self.y, self.x)
+
+def t_coord(coord):
+    y, x = coord
+    return f'({x}, {y})'
 
 def t_update_width_and_height(W,H):
     global WIDTH, HEIGHT
@@ -312,6 +327,8 @@ if __name__ == '__main__':
     kanban_node.set_up(PACMAN_MAP)
 
     pacman_board = {}
+    prev_pacmans = None
+    prev2_pacmans = None
 
     while True:
         # 1
@@ -319,6 +336,11 @@ if __name__ == '__main__':
         print(f'mine_score {mine_score} opp_score {opp_score}',file=sys.stderr)
 
         # 2
+        prev_pacmans = []
+        for p1 in pacman_board.values():
+            if p1.mine == MINE :
+                prev_pacmans.append( Pacman(p1) )
+
         visible_pac_count = int(input())  # all your pacs and enemy pacs in sight
         print(f'PACMAN {visible_pac_count}', file=sys.stderr)
         for i in range(visible_pac_count):
@@ -333,7 +355,12 @@ if __name__ == '__main__':
             if pacman_id in pacman_board :
                 pacman_board[pacman_id].update(state_in[2:])
                 # Technical Debt
-                pacman_board[pacman_id].correction(next_pacman)
+                for predict_p1 in next_pacmans:
+                    if predict_p1.id == pacman_id :
+                        for previous_p1 in prev_pacmans:
+                            if previous_p1.id == pacman_id :
+                                print(f'MINE {pacman_board[pacman_id]}',file=sys.stderr)
+                                pacman_board[pacman_id].correction(predict_p1, previous_p1)
 
             else :
                 print(f'CREATE NEW PACMAN {pacman_id}',file=sys.stderr)
@@ -358,24 +385,26 @@ if __name__ == '__main__':
         for k1, p1 in pacman_board.items():
             #print(f'PACMAN {p1} is mine {p1.mine} ?',file=sys.stderr)
             if p1.mine == OPP:
-                kanban_node.opp = p1
+                kanban_node.opp[p1.id] = p1
                 continue
 
             else:
-                kanban_node.mine = p1
+                kanban_node.mine[p1.id] = p1
                 continue
         kanban_node.update()
 
         # OUT
-        print(f'PACMAN MINE {kanban_node.mine.id}',file=sys.stderr)
-        print(f'PACMAN INDEX {kanban_node.mine.index}',file=sys.stderr)
-        print(f'PACMAN _WAY_ {kanban_node.mine.way}',file=sys.stderr)
+        #print(f'PACMAN MINE {kanban_node.mine.id}',file=sys.stderr)
+        #print(f'PACMAN INDEX {kanban_node.mine.index}',file=sys.stderr)
+        #print(f'PACMAN _WAY_ {kanban_node.mine.way}',file=sys.stderr)
 
-        next_pacman = next(iter(kanban_node))
 
-        print(f'_NEXT_ MINE {next_pacman.id}',file=sys.stderr)
-        print(f'_NEXT_ INDEX {next_pacman.index}',file=sys.stderr)
-        print(f'_NEXT_ _WAY_ {next_pacman.way}',file=sys.stderr)
-
-        out = next_pacman.write_move()
+        next_pacmans = next(iter(kanban_node))
+        out = ''
+        for p1 in next_pacmans:
+            out = p1.write_move(out)
         print(out)
+
+        #print(f'_NEXT_ MINE {next_pacman.id}',file=sys.stderr)
+        #print(f'_NEXT_ INDEX {next_pacman.index}',file=sys.stderr)
+        #print(f'_NEXT_ _WAY_ {next_pacman.way}',file=sys.stderr)
