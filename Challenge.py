@@ -71,22 +71,24 @@ class BoardNodesAndEdges():
         self.nodes = {}     #   Case
         self.cases = {}     #   Case
         self.edges = []
-        self.opp = None
-        self.mine = None
+        self.opp = {}
+        self.mine = {}
 
     def __str__(self):
         return 'Dictionary of Nodes and Edges'
 
     def update(self):
-        if self.opp.coord in self.nodes :
-            self.nodes[self.opp.coord].pellet = 0
-        elif self.opp.coord in self.cases :
-            self.cases[self.opp.coord].pellet = 0
+        for _, opp in self.opp.items():
+            if opp.coord in self.nodes :
+                self.nodes[opp.coord].pellet = 0
+            elif opp.coord in self.cases :
+                self.cases[opp.coord].pellet = 0
 
-        if self.mine.coord in self.nodes :
-            self.nodes[self.mine.coord].pellet = 0
-        elif self.mine.coord in self.cases :
-            self.cases[self.mine.coord].pellet = 0
+        for _, mine in self.mine.items():
+            if mine.coord in self.nodes :
+                self.nodes[mine.coord].pellet = 0
+            elif mine.coord in self.cases :
+                self.cases[mine.coord].pellet = 0
 
 
     def set_cases(self,board):
@@ -188,24 +190,24 @@ class BoardNodesAndEdges():
     def __iter__(self):
         return self
 
-    def __next__(self):
-        pacopp_y, pacopp_x = pacopp_coord = self.opp.coord
-        pacmine_y, pacmine_x = pacmine_coord = self.mine.coord
+    def find_next_move(self,mine):
+        #pacopp_y, pacopp_x = pacopp_coord = self.opp.coord
+        pacmine_y, pacmine_x = pacmine_coord = mine.coord
         #print(f'pacmine_coord x {pacmine_x} y {pacmine_y} pacopp_coord x {pacopp_x} y {pacopp_y}')
         if pacmine_coord in self.cases :
             #print(f'CASE {self.cases[pacmine_coord]}')
             edge = self.cases[pacmine_coord].refer
-            if self.mine.index == PAC_INIT_INDEX :
+            if mine.index == PAC_INIT_INDEX :
                 for i1 in range(len(edge.allays)):
                     #print(f'SEARCH {edge.allays[i1]} INDEX {i1}')
                     if pacmine_coord == edge.allays[i1].coord :
                         #print(f'FINDED {edge.allays[i1]} INDEX {i1}')
-                        self.mine.index = i1
-                        self.mine.way = 1
+                        mine.index = i1
+                        mine.way = 1
                         break
-                new_pacman = Pacman(self.mine)
+                new_pacman = Pacman(mine)
             else :
-                new_pacman = Pacman(self.mine)
+                new_pacman = Pacman(mine)
 
             print(f'INDEX {new_pacman.index}',file=sys.stderr)
             print(f'EDGE {edge}',file=sys.stderr)
@@ -235,16 +237,23 @@ class BoardNodesAndEdges():
             # Determine Way
             e1 = self.nodes[pacmine_coord].edges[max_index]
             if pacmine_coord == self.nodes[pacmine_coord].edges[max_index].allays[0].coord:
-                self.mine.way = 1
-                self.mine.index = 0
+                mine.way = 1
+                mine.index = 0
             else :
-                self.mine.way = -1
-                self.mine.index = len(self.nodes[pacmine_coord].edges[max_index].allays) - 1
-            new_pacman = Pacman(self.mine)
+                mine.way = -1
+                mine.index = len(self.nodes[pacmine_coord].edges[max_index].allays) - 1
+            new_pacman = Pacman(mine)
             new_pacman.index = new_pacman.index + new_pacman.way
             edge = self.nodes[pacmine_coord].edges[max_index]
             new_pacman.y , new_pacman.x = edge.allays[new_pacman.index].coord
             return new_pacman
+
+    def __next__(self):
+        mines = []
+        for _, mine in self.mine.items():
+            p1 = self.find_next_move(mine)
+            mines.append(p1)
+        return mines
 
 class Pacman():
 
@@ -274,8 +283,9 @@ class Pacman():
         if self.coord == next.coord :
             self.index, self.way = next.index, next.way
 
-    def write_move(self):
+    def write_move(self,intext):
         t = f'MOVE {self.id} {str(self.x)} {str(self.y)}'
+        t = t if intext == '' else f'{intext} | {t}'
         return t
 
     @property
