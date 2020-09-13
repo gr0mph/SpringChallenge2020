@@ -36,14 +36,14 @@ class _moving(unittest.TestCase):
 
         pacman_new = Pacman(None)
         pacman_new.mine = 1
-        pacman_new.x = 1
-        pacman_new.y = 2
+        pacman_new.x = 27
+        pacman_new.y = 1
         pacman_new.id = 0
 
         pacman_opp = Pacman(None)
         pacman_opp.mine = 0
-        pacman_opp.x = 5
-        pacman_opp.y = 2
+        pacman_opp.x = 7
+        pacman_opp.y = 1
 
         for _, c1 in kanban_node.cases.items():
             #    print(f'DEBUG CASE {c1}')

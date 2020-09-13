@@ -77,6 +77,18 @@ class BoardNodesAndEdges():
     def __str__(self):
         return 'Dictionary of Nodes and Edges'
 
+    def update(self):
+        if self.opp.coord in self.nodes :
+            self.nodes[self.opp.coord].pellet = 0
+        elif self.opp.coord in self.cases :
+            self.cases[self.opp.coord].pellet = 0
+
+        if self.mine.coord in self.nodes :
+            self.nodes[self.mine.coord].pellet = 0
+        elif self.mine.coord in self.cases :
+            self.cases[self.mine.coord].pellet = 0
+
+
     def set_cases(self,board):
         nb_cases = 0
         for y_row, row_string in enumerate(board):
@@ -149,12 +161,13 @@ class BoardNodesAndEdges():
                 return
 
             else:
+                next_case.refer = edge
                 first_case = edge.allays[0]
                 first_coord = first_case.coord
                 edge.allays.append(next_case)
                 edge.allays.append(first_case)
                 self.edges.append(edge)
-                #print(f'FINAL =>| {edge}')
+                print(f'FINAL =>| {edge}',file=sys.stderr)
                 return
 
         elif next_coord in self.nodes :
@@ -194,8 +207,8 @@ class BoardNodesAndEdges():
             else :
                 new_pacman = Pacman(self.mine)
 
-            #print(f'INDEX {new_pacman.index}')
-            #print(f'EDGE {edge}')
+            print(f'INDEX {new_pacman.index}',file=sys.stderr)
+            print(f'EDGE {edge}',file=sys.stderr)
             #print()
 
             new_pacman.index = new_pacman.index + new_pacman.way
@@ -216,6 +229,9 @@ class BoardNodesAndEdges():
                 if pellet > max_pellet:
                     max_pellet, max_index = pellet, index
                 index = index + 1
+
+            print(f'NODE max PELLET {max_pellet} max INDEX {max_index}',file=sys.stderr)
+            print(f'EDGE {self.nodes[pacmine_coord].edges[max_index]}',file=sys.stderr)
             # Determine Way
             e1 = self.nodes[pacmine_coord].edges[max_index]
             if pacmine_coord == self.nodes[pacmine_coord].edges[max_index].allays[0].coord:
@@ -254,6 +270,10 @@ class Pacman():
         state.append(1)
         self.x, self.y, self.type = state[0], state[1], state[2]
 
+    def correction(self,next):
+        if self.coord == next.coord :
+            self.index, self.way = next.index, next.way
+
     def write_move(self):
         t = f'MOVE {self.id} {str(self.x)} {str(self.y)}'
         return t
@@ -266,11 +286,17 @@ def t_update_width_and_height(W,H):
     global WIDTH, HEIGHT
     WIDTH, HEIGHT = W, H
 
+def t_check_map(PACMAN_MAP):
+    for i in range(HEIGHT):
+        print("".join(PACMAN_MAP[i]),file=sys.stderr)
+
 if __name__ == '__main__':
     WIDTH, HEIGHT = [int(i) for i in input().split()]
     print(f'WIDTH {WIDTH} HEIGHT {HEIGHT}', file=sys.stderr)
     for i in range(HEIGHT):
         PACMAN_MAP.append(list(input()))
+
+    t_check_map(PACMAN_MAP)
 
     kanban_node = BoardNodesAndEdges(None)
     kanban_node.set_up(PACMAN_MAP)
@@ -296,8 +322,11 @@ if __name__ == '__main__':
 
             if pacman_id in pacman_board :
                 pacman_board[pacman_id].update(state_in[2:])
+                # Technical Debt
+                pacman_board[pacman_id].correction(next_pacman)
 
             else :
+                print(f'CREATE NEW PACMAN {pacman_id}',file=sys.stderr)
                 pacman_new = Pacman(None)
                 pacman_new.id, pacman_new.mine = pacman_id, mine
                 pacman_board[pacman_id] = pacman_new
@@ -325,8 +354,18 @@ if __name__ == '__main__':
             else:
                 kanban_node.mine = p1
                 continue
+        kanban_node.update()
 
         # OUT
+        print(f'PACMAN MINE {kanban_node.mine.id}',file=sys.stderr)
+        print(f'PACMAN INDEX {kanban_node.mine.index}',file=sys.stderr)
+        print(f'PACMAN _WAY_ {kanban_node.mine.way}',file=sys.stderr)
+
         next_pacman = next(iter(kanban_node))
+
+        print(f'_NEXT_ MINE {next_pacman.id}',file=sys.stderr)
+        print(f'_NEXT_ INDEX {next_pacman.index}',file=sys.stderr)
+        print(f'_NEXT_ _WAY_ {next_pacman.way}',file=sys.stderr)
+
         out = next_pacman.write_move()
         print(out)
