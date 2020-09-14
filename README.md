@@ -21,3 +21,7 @@
 
 - [x] Coding and testing
 - [x] Add multiple pacman
+
+| Title   | URL                          |
+|:--------|:-----------------------------|
+| Awesome | [Link](resource/RESOURCE.md) |
