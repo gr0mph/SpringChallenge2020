@@ -81,7 +81,6 @@ class BoardAgent():
                 coord1 = y1, x1
                 if coord1 in kanban_node.cases:
                     self.cases[coord1] = kanban_node.cases[coord1]
-                    print(f'CASE {kanban_node.cases[coord1]}')
                 elif coord1 in kanban_node.nodes:
                     self.cases[coord1] = kanban_node.nodes[coord1]
                 else:
@@ -406,7 +405,6 @@ if __name__ == '__main__':
         # 2
         visible_pac_count = int(input())
         mine_pac_count = 0
-        board_agent = []
         for i in range(visible_pac_count):
             state_in = input().split()
             state_in[4] = TYPE_SET[state_in[4]]
@@ -444,7 +442,7 @@ if __name__ == '__main__':
                 if pacman_new.mine == MINE :
                     pacman_agent = BoardAgent(None)
                     pacman_agent.id, pacman_agent.mine = pacman_new.id, pacman_new
-                    board_agent[pacman_agent.id] = pacman_agent
+                    board_agent[ pacman_id ] = pacman_agent
 
         print(f'PACMAN {visible_pac_count}', file=sys.stderr)
         print(f'MINES {mine_pac_count}',file=sys.stderr)

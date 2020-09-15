@@ -68,6 +68,7 @@ class _pelleting(unittest.TestCase):
 
         print(f'AGENT: {pacman_agent}')
 
+        board_agent[ pacman_agent.id ] = pacman_agent
 
         return
 
