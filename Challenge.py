@@ -14,6 +14,7 @@ DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 NB_NODES = 0
 PAC_INIT_INDEX = -1
 PAC_INIT_WAY = 0
+TURN = 0
 
 def read_map():
     global WIDTH, HEIGHT
@@ -63,6 +64,42 @@ class Edge():
             coord = f'({x1},{y1})'
             text = f'{coord}' if text == '' else f'{text}->{coord}'
         return text
+
+class BoardAgent():
+    def __init__(self,clone):
+        self.id, self.mine = 0, None
+        self.cases = {}
+        if clone is not None :
+            self.id, self.mine = clone.id, copy.copy(clone.mine)
+
+    def board(self,kanban_node):
+        y_row, x_col = self.mine.y, self.mine.x
+        for dir, dy_row, dx_col in DIRS:
+            index = 1
+            while True:
+                y1, x1 = y_row + index * dy_row , x_col + index * dx_col
+                coord1 = y1, x1
+                if coord1 in kanban_node.cases:
+                    self.cases[coord1] = kanban_node.cases[coord1]
+                    print(f'CASE {kanban_node.cases[coord1]}')
+                elif coord1 in kanban_node.nodes:
+                    self.cases[coord1] = kanban_node.nodes[coord1]
+                else:
+                    break
+                index = index + 1
+
+    def update(self, pellet):
+        for coord1, c1 in self.cases.items():
+            if coord1 not in pellet:
+                c1.pellet = 0
+
+    def __str__(self):
+        text = ''
+        for _, c1 in self.cases.items():
+            y1, x1 = c1.coord
+            coord = f'({x1},{y1},{c1.pellet})'
+            text = f'{coord}' if text == '' else f'{text}->{coord}'
+        return f'{self.id} {text}'
 
 class BoardNodesAndEdges():
 
@@ -347,12 +384,16 @@ if __name__ == '__main__':
     for k1, c1 in kanban_node.cases.items():
         c1.pellet = 1
 
-
     pacman_board = {}
     prev_pacmans = None
     prev2_pacmans = None
 
+    board_agent = {}
+    pellet_board = {}
+
     while True:
+        TURN = TURN + 1
+
         # 1
         mine_score, opp_score = [int(i) for i in input().split()]
         print(f'MINE_SCORE {mine_score} OPP_SCORE {opp_score}',file=sys.stderr)
@@ -365,6 +406,7 @@ if __name__ == '__main__':
         # 2
         visible_pac_count = int(input())
         mine_pac_count = 0
+        board_agent = []
         for i in range(visible_pac_count):
             state_in = input().split()
             state_in[4] = TYPE_SET[state_in[4]]
@@ -387,12 +429,22 @@ if __name__ == '__main__':
                                 print(f'MINE {pacman_board[pacman_id]}',file=sys.stderr)
                                 pacman_board[pacman_id].correction(predict_p1, previous_p1)
 
+                if pacman_board[pacman_id].mine == MINE :
+                    pacman_agent = board_agent[pacman_id]
+                    pacman_agent = BoardAgent(pacman_agent)
+                    board_agent[pacman_id] = pacman_agent
+
             else :
                 print(f'CREATE NEW PACMAN {pacman_id}',file=sys.stderr)
                 pacman_new = Pacman(None)
                 pacman_new.id, pacman_new.mine = pacman_id, mine
                 pacman_board[pacman_id] = pacman_new
                 pacman_board[pacman_id].update(state_in[2:])
+
+                if pacman_new.mine == MINE :
+                    pacman_agent = BoardAgent(None)
+                    pacman_agent.id, pacman_agent.mine = pacman_new.id, pacman_new
+                    board_agent[pacman_agent.id] = pacman_agent
 
         print(f'PACMAN {visible_pac_count}', file=sys.stderr)
         print(f'MINES {mine_pac_count}',file=sys.stderr)
@@ -410,6 +462,7 @@ if __name__ == '__main__':
         # 3
         visible_pellet_count = int(input())  # all pellets in sight
         print(f'PELLET {visible_pellet_count}',file=sys.stderr)
+        pellet_board = {}
         for i in range(visible_pellet_count):
             pellet_line = [int(j) for j in input().split()]
             pellet_x, pellet_y, pellet = pellet_line[0],pellet_line[1],pellet_line[2]
@@ -420,7 +473,13 @@ if __name__ == '__main__':
                     kanban_node.nodes[pellet_coord].pellet = pellet
                 elif pellet_coord in kanban_node.cases:
                     kanban_node.cases[pellet_coord].pellet = pellet
+
+            pellet_board[pellet_y, pellet_x] = pellet
+
         # --> Add correction <--
+        for k1, a1 in board_agent.items():
+            a1.board(kanban_node)
+            a1.update(pellet_board)
 
         # TREATMENT
         for k1, p1 in pacman_board.items():
