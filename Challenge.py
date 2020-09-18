@@ -1,6 +1,6 @@
-import sys
+import sys, copy, heapq
+
 import math
-import copy
 import random
 import numpy as np
 import time
@@ -23,6 +23,95 @@ def read_map():
     global PACMAN_MAP
     for i in range(HEIGHT):
         PACMAN_MAP.append(list(input()))
+
+class PathPlanning():
+
+    def __init__(self,clone):
+        pass
+
+    def __str__(self):
+        return 'PathPlanning'
+
+    def solve(self,kanban_node,pacman_id):
+        mine = kanban_node.mine[pacman_id]
+        start_node = kanban_node.nodes[ mine.coord ]
+        queue = [ ( 0 , start_node ) ]
+
+        # TODO:
+        state = StrategyThief(None)
+
+        distgain = {}
+        for _, n1 in kanban_node.nodes.items():
+            distgain[n1] = (float('Inf'),[])
+
+        distgain[start_node] = (0.0,[])
+
+        while len(queue):
+            ( cost_curr , node_current ) = heapq.heappop(queue)
+            _, path_curr = distgain[node_current]
+
+            for e1 in node_current.edges:
+
+                node_next = e1.finish(node_current)
+                cost_prev, path_prev = distgain[node_next]
+                cost_next = state.heuristic(kanban_node,e1)
+
+                if cost_next + cost_curr < cost_prev :
+                    # Update distgain
+                    cost_update = cost_next + cost_curr
+                    # Update path
+                    path_update = copy.copy(path_curr)
+                    path_update.append(e1)
+
+                    distgain[node_next] = (cost_update,path_update)
+                    heapq.heappush( queue , ( cost_update , node_next ) )
+
+        del distgain[start_node]
+        gain = -float('Inf')
+        edge_path = []
+        for n1, t1 in distgain.items():
+            g1, p1 = t1
+            if g1 > gain : gain, edge_path = g1, t1
+        return edge_path
+
+class StrategyThief:
+
+    def __init__(self,clone):
+        pass
+
+    def __str__(self):
+        pass
+
+    def heuristic(self,kanban_node,edge):
+        gain = 0
+        for e1 in edge[1:]:
+            gain = gain + e1.pellet
+        len = len(edge) - 1
+        return -(gain / len)
+
+class StrategyBerserk:
+
+    def __init__(self,clone):
+        pass
+
+    def __str__(self):
+        pass
+
+class StrategyPriest:
+
+    def __init__(self,clone):
+        pass
+
+    def __str__(self):
+        pass
+
+class StrategyThief:
+
+    def __init__(self,clone):
+        pass
+
+    def __str__(self):
+        pass
 
 class Case():
     def __init__(self,clone):
@@ -64,6 +153,9 @@ class Edge():
             coord = f'({x1},{y1})'
             text = f'{coord}' if text == '' else f'{text}->{coord}'
         return text
+
+    def finish(self,node):
+        return self.allays[0] if node.coord != self.allays[0].coord else self.allays[-1]
 
 class BoardAgent():
     def __init__(self,clone):
