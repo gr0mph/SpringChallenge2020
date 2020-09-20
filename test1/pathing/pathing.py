@@ -63,6 +63,9 @@ class _pelleting(unittest.TestCase):
             print(f'EDGE {e1}')
         print(f'end')
 
+        pacman = pather.reduce(kanban_node,pacman_new.id)
+        
+
         return
 
 

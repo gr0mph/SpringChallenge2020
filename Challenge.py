@@ -27,7 +27,10 @@ def read_map():
 class PathPlanning():
 
     def __init__(self,clone):
-        pass
+        self.first = None
+        self.last = None
+        self.gain = 0
+        self.path = []
 
     def __str__(self):
         return 'PathPlanning'
@@ -36,6 +39,9 @@ class PathPlanning():
         mine = kanban_node.mine[pacman_id]
         start_node = kanban_node.nodes[ mine.coord ]
         queue = [ ( 0 , start_node ) ]
+
+        # ADD
+        self.first = start_node
 
         # TODO:
         state = StrategyThief(None)
@@ -74,6 +80,7 @@ class PathPlanning():
                         #print(f'node_next {node_next}')
                         heapq.heappush( queue , ( cost_update , node_next ) )
                         #print(f'done')
+                        self.last , self.gain, self.path = node_next, gain_update, path_update
                         return (node_next,gain_update,path_update)
 
                 else :
@@ -112,6 +119,48 @@ class PathPlanning():
             print(f'end')
             if g1 > gain : gain, edge_path = g1, t1
         return edge_path
+
+    def reduce(self,kanban_node,pacman_id):
+        current_node = self.first
+        way = 1
+        pacman = Pacman(kanban_node.mine[pacman_id])
+        pacman.path = []
+
+        for e1 in self.path :
+            print(e1)
+            way = -1
+            if current_node.coord == e1.allays[0].coord :
+                way = 1
+            else :
+                way = -1
+            print(f'current_node {current_node} first {e1.allays[0]} last {e1.allays[-1]}')
+            print(f'first {current_node == e1.allays[0]} last {current_node == e1.allays[-1]}')
+
+            #if current_node == e1.allays[-1] :
+            if current_node.coord == e1.allays[-1].coord :
+                for c1 in e1.allays[1:-1:1]:
+                    print(c1)
+                    pacman.path.append(c1)
+                for c1 in e1.allays[-2::-1]:
+                    print(c1)
+                    pacman.path.append(c1)
+            elif way == 1 :
+                for c1 in e1.allays[1::1]:
+                    print(c1)
+                    pacman.path.append(c1)
+            else:
+                for c1 in e1.allays[-2::-1]:
+                    print(c1)
+                    pacman.path.append(c1)
+
+            current_node = e1.allays[-1] if way == 1 else e1.allays[0]
+
+
+        for c1 in pacman.path:
+            print(f'{c1}->',end='')
+        print()
+        return pacman
+
 
 class StrategyThief:
 
@@ -238,6 +287,7 @@ class BoardNodesAndEdges():
         self.edges = []
         self.opp = {}
         self.mine = {}
+        self.pather = None
 
     def __str__(self):
         return 'Dictionary of Nodes and Edges'
@@ -450,11 +500,13 @@ class Pacman():
         self.index = PAC_INIT_INDEX                                 # Index in the edge
         self.way = PAC_INIT_WAY                                    # Way in the edge
         self.edge = None
+        self.path = None
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
             self.x, self.y, self.type = clone.x, clone.y, clone.type
             self.index, self.way = clone.index, clone.way
             self.edge = clone.edge
+            self.path = copy.copy(clone.path)
 
     def __str__(self):
         if self is None :
@@ -519,6 +571,9 @@ if __name__ == '__main__':
 
     board_agent = {}
     pellet_board = {}
+
+    pather = PathPlanning(None)
+    kanban_node.pather = pather
 
     while True:
         TURN = TURN + 1
