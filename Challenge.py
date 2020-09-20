@@ -41,10 +41,11 @@ class PathPlanning():
         state = StrategyThief(None)
 
         distgain = {}
+        gaingain = {}
         for _, n1 in kanban_node.nodes.items():
             distgain[n1] = (float('Inf'),[])
 
-        distgain[start_node] = (0.0,[])
+        distgain[start_node] = (0,[])
 
         while len(queue):
             ( cost_curr , node_current ) = heapq.heappop(queue)
@@ -56,21 +57,59 @@ class PathPlanning():
                 cost_prev, path_prev = distgain[node_next]
                 cost_next = state.heuristic(kanban_node,e1)
 
-                if cost_next + cost_curr < cost_prev :
-                    # Update distgain
-                    cost_update = cost_next + cost_curr
-                    # Update path
-                    path_update = copy.copy(path_curr)
-                    path_update.append(e1)
+                if cost_next <= 0 :
+                    #print(f'node_curr {node_current} cost_curr {cost_curr} cost_prev {cost_prev}')
 
-                    distgain[node_next] = (cost_update,path_update)
-                    heapq.heappush( queue , ( cost_update , node_next ) )
+                    if 1 + cost_curr < cost_prev :
+                        # Update distgain
+                        cost_update = 1 + cost_curr
+                        gain_update = cost_next + cost_curr
+                        # Update path
+                        path_update = copy.copy(path_curr)
+                        path_update.append(e1)
+
+                        distgain[node_next] = (cost_update,path_update)
+                        gaingain[node_next] = (gain_update,path_update)
+                        #print(f'cost_update {cost_update}')
+                        #print(f'node_next {node_next}')
+                        heapq.heappush( queue , ( cost_update , node_next ) )
+                        #print(f'done')
+                        return (node_next,gain_update,path_update)
+
+                else :
+                    if cost_next + cost_curr < cost_prev :
+                        # Update distgain
+                        cost_update = cost_next + cost_curr
+                        # Update path
+                        path_update = copy.copy(path_curr)
+                        path_update.append(e1)
+
+                        distgain[node_next] = (cost_update,path_update)
+                        #print(f'cost_update {cost_update}')
+                        #print(f'node_next {node_next}')
+                        heapq.heappush( queue , ( cost_update , node_next ) )
+                        #print(f'done')
 
         del distgain[start_node]
         gain = -float('Inf')
         edge_path = []
+
+        print("GAIN ! :)")
+        for n1, t1 in gaingain.items():
+            g1, p1 = t1
+            print(f'Node ID {n1} Gain {g1} Path ')
+            for e1 in p1:
+                print(f'EDGE {e1}')
+            print(f'end')
+            if g1 > gain : gain, edge_path = g1, t1
+
+        print("PATH ! :)")
         for n1, t1 in distgain.items():
             g1, p1 = t1
+            print(f'Node ID {n1} Gain {g1} Path ')
+            for e1 in p1:
+                print(f'EDGE {e1}')
+            print(f'end')
             if g1 > gain : gain, edge_path = g1, t1
         return edge_path
 
@@ -80,14 +119,15 @@ class StrategyThief:
         pass
 
     def __str__(self):
-        pass
+        return 'StrategyThief'
 
     def heuristic(self,kanban_node,edge):
         gain = 0
-        for e1 in edge[1:]:
+        for e1 in edge.allays[1:]:
             gain = gain + e1.pellet
-        len = len(edge) - 1
-        return -(gain / len)
+        gain = len(edge.allays) - gain
+        return gain
+
 
 class StrategyBerserk:
 
@@ -98,14 +138,6 @@ class StrategyBerserk:
         pass
 
 class StrategyPriest:
-
-    def __init__(self,clone):
-        pass
-
-    def __str__(self):
-        pass
-
-class StrategyThief:
 
     def __init__(self,clone):
         pass
@@ -140,6 +172,12 @@ class Node(Case):
 
     def __str__(self):
         return super().__str__()
+
+    def __eq__(self,other):
+        return self.id - other.id
+
+    def __hash__(self):
+        return self.id
 
 class Edge():
     def __init__(self,clone):
