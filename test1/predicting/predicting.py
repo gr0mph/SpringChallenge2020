@@ -31,9 +31,9 @@ def t_check_map(PACMAN_MAP):
     for i in range(HEIGHT):
         print("".join(PACMAN_MAP[i]),file=sys.stderr)
 
-class _pathing(unittest.TestCase):
+class _predicting(unittest.TestCase):
 
-    def test_pelleting(self):
+    def test_predecting(self):
         t_check_map(PACMAN_MAP)
 
         kanban_node = BoardNodesAndEdges(None)
@@ -49,6 +49,7 @@ class _pathing(unittest.TestCase):
                 pacman_new.id = d1[0]
                 kanban_node.mine[pacman_new.id] = pacman_new
 
+
         for _, c1 in kanban_node.cases.items():
             #    print(f'DEBUG CASE {c1}')
             c1.pellet = 1
@@ -56,14 +57,25 @@ class _pathing(unittest.TestCase):
         kanban_node.cases[(3,8)].pellet = 10
 
         pather = PathPlanning(None)
-        n1, g1, p1 = pather.solve(kanban_node,pacman_new.id)
+        kanban_node.pather = pather
 
-        print(f'Node ID {n1} Gain {g1} Path ')
-        for e1 in p1:
-            print(f'EDGE {e1}')
-        print(f'end')
+        print("TEST")
 
-        pacman = pather.reduce(kanban_node,pacman_new.id)
+        kanban_node = next(iter(kanban_node))
+        out = ''
+        for _, p1 in kanban_node.mine.items():
+            print(p1)
+            out = p1.write_move(out)
+        print(out)
+
+        kanban_node = next(iter(kanban_node))
+        out = ''
+        for _, p1 in kanban_node.mine.items():
+            print(p1)
+            out = p1.write_move(out)
+        print(out)
+
+
         return
 
 

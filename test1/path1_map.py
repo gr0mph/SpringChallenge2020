@@ -15,4 +15,6 @@ WIDTH = len(PACMAN_MAP[0])
 
 PACMAN_NUMBER = 1
 PACMAN_LIST = []
-PACMAN_LIST.append([0, 1, 1, 1])        # ID, MINE, X, Y
+PACMAN_LIST.append([1, 1, 1, 1])        # ID, MINE, X, Y
+PACMAN_LIST.append([1, 0, 15, 1])        # ID, MINE, X, Y
+PACMAN_LIST.append([2, 0, 1, 3])        # ID, MINE, X, Y

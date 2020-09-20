@@ -101,24 +101,20 @@ class PathPlanning():
         gain = -float('Inf')
         edge_path = []
 
-        print("GAIN ! :)")
-        for n1, t1 in gaingain.items():
-            g1, p1 = t1
-            print(f'Node ID {n1} Gain {g1} Path ')
-            for e1 in p1:
-                print(f'EDGE {e1}')
-            print(f'end')
-            if g1 > gain : gain, edge_path = g1, t1
+        # Pas cool
+        #for n1, t1 in gaingain.items():
+        #    g1, p1 = t1
+        #    if g1 > gain : gain, edge_path = g1, t1
 
-        print("PATH ! :)")
+        node_next, gain_next, path_next = None, 0, []
         for n1, t1 in distgain.items():
             g1, p1 = t1
-            print(f'Node ID {n1} Gain {g1} Path ')
-            for e1 in p1:
-                print(f'EDGE {e1}')
-            print(f'end')
-            if g1 > gain : gain, edge_path = g1, t1
-        return edge_path
+            if g1 > gain_next :
+                node_next = n1
+                gain_next = g1
+                path_next = t1
+
+        return (noàde_next, gain_next, path_next)
 
     def reduce(self,kanban_node,pacman_id):
         current_node = self.first
@@ -127,38 +123,26 @@ class PathPlanning():
         pacman.path = []
 
         for e1 in self.path :
-            print(e1)
             way = -1
             if current_node.coord == e1.allays[0].coord :
                 way = 1
             else :
                 way = -1
-            print(f'current_node {current_node} first {e1.allays[0]} last {e1.allays[-1]}')
-            print(f'first {current_node == e1.allays[0]} last {current_node == e1.allays[-1]}')
 
-            #if current_node == e1.allays[-1] :
             if current_node.coord == e1.allays[-1].coord :
                 for c1 in e1.allays[1:-1:1]:
-                    print(c1)
                     pacman.path.append(c1)
                 for c1 in e1.allays[-2::-1]:
-                    print(c1)
                     pacman.path.append(c1)
             elif way == 1 :
                 for c1 in e1.allays[1::1]:
-                    print(c1)
                     pacman.path.append(c1)
             else:
                 for c1 in e1.allays[-2::-1]:
-                    print(c1)
                     pacman.path.append(c1)
 
             current_node = e1.allays[-1] if way == 1 else e1.allays[0]
 
-
-        for c1 in pacman.path:
-            print(f'{c1}->',end='')
-        print()
         return pacman
 
 
@@ -172,6 +156,12 @@ class StrategyThief:
 
     def heuristic(self,kanban_node,edge):
         gain = 0
+        for _, opp1 in kanban_node.opp.items() :
+            coord_opp = opp1.coord
+            cases_opp = [e1 for e1 in edge.allays if e1.coord == coord_opp ]
+            if len(cases_opp) != 0 :
+                return float('Inf')
+
         for e1 in edge.allays[1:]:
             gain = gain + e1.pellet
         gain = len(edge.allays) - gain
@@ -288,6 +278,13 @@ class BoardNodesAndEdges():
         self.opp = {}
         self.mine = {}
         self.pather = None
+        if clone is not None:
+            self.nodes = copy.copy(clone.nodes)     #   Dynamic
+            self.edges = copy.copy(clone.cases)     #   Dynamic
+            self.edges = clone.edges                #   Static
+            self.opp = copy.copy(clone.opp)         #   Dynamic
+            self.mine = copy.copy(clone.mine)       #   Dynamic
+            self.pather = clone.pather              #   Static
 
     def __str__(self):
         return 'Dictionary of Nodes and Edges'
@@ -403,92 +400,63 @@ class BoardNodesAndEdges():
         self.set_nodes_and_edges(board)
 
     def __iter__(self):
+        print("ITER")
         return self
 
-    def find_next_move(self,mine,others):
-        #pacopp_y, pacopp_x = pacopp_coord = self.opp.coord
+    def find_next2_move(self,mine):
         pacmine_y, pacmine_x = pacmine_coord = mine.coord
         #print(f'pacmine_coord x {pacmine_x} y {pacmine_y} pacopp_coord x {pacopp_x} y {pacopp_y}')
         if pacmine_coord in self.cases :
-            #print(f'CASE {self.cases[pacmine_coord]}')
-            edge = self.cases[pacmine_coord].refer
-            if mine.index == PAC_INIT_INDEX :
-                for i1 in range(len(edge.allays)):
-                    #print(f'SEARCH {edge.allays[i1]} INDEX {i1}')
-                    if pacmine_coord == edge.allays[i1].coord :
-                        #print(f'FINDED {edge.allays[i1]} INDEX {i1}')
-                        mine.index = i1
-                        mine.way = 1
-                        break
-                new_pacman = Pacman(mine)
-            else :
-                new_pacman = Pacman(mine)
 
-            #print(f'INDEX {new_pacman.index}',file=sys.stderr)
-            #print(f'EDGE {edge}',file=sys.stderr)
-            #print()
+            # TODO: Can be performed
+            if mine.path is None :
+                edge = self.cases[pacmine_coord].refer
+                mine.path = copy.copy(edge.allays)
+                if mine.path[0].coord == mine.path[-1].coord :
+                    # TODO:
+                    mine.path.pop(-1)
+                    while True:
+                        if mine.path[-1].coord != pacmine_coord :
+                            mine.path.pop(-1)
+                        else :
+                            mine.path.pop(-1)
+                            break
+                    mine.path = mine.path[::-1] # Reverse
 
-            new_pacman.index = new_pacman.index + new_pacman.way
-            #print(f'_NEXT_ {edge.allays[new_pacman.index]} INDEX {new_pacman.index}')
-            #print()
+                else :
+                    while True:
+                        if mine.path[0].coord != pacmine_coord :
+                            mine.path.pop(0)
+                        else :
+                            mine.path.pop(0)
+                            break
 
-            new_pacman.y , new_pacman.x = edge.allays[new_pacman.index].coord
-            return new_pacman
+            else:
+                mine.path.pop(0)
 
         elif pacmine_coord in self.nodes :
-            #print('NODE')
-            mine.edge = None
-            max_index, index = -1, 0
-            max_pellet, pellet = -1, 0
-            forbid_edges =  [ p1.edge for p1 in others if p1.edge is not None]
-            tovisit_edges = [ e1 for e1 in self.edges if e1.visited == False ]
 
-            for e1 in self.nodes[pacmine_coord].edges:
-                pellet = 0
-                if e1 in forbid_edges :
-                    index = index + 1
-                    continue
-
-                #if e1.visited == True :
-                #    print(f'EDGE {e1} already visited',file=sys.stderr)
-                #    index = index + 1
-                #    continue
-
-                #print(f'EDGE {e1}',file=sys.stderr)
-
-                for c1 in e1.allays:
-                    pellet = pellet + c1.pellet
-                if pellet > max_pellet:
-                    max_pellet, max_index = pellet, index
-                index = index + 1
-
-            if max_pellet == - 1:
-                max_index = 0
-
-            print(f'NODE max PELLET {max_pellet} max INDEX {max_index}',file=sys.stderr)
-            #print(f'EDGE {self.nodes[pacmine_coord].edges[max_index]}',file=sys.stderr)
-            # Determine Way
-            e1 = self.nodes[pacmine_coord].edges[max_index]
-            e1.visited = True
-            mine.edge = e1
-            if pacmine_coord == self.nodes[pacmine_coord].edges[max_index].allays[0].coord:
-                mine.way = 1
-                mine.index = 0
-            else :
-                mine.way = -1
-                mine.index = len(self.nodes[pacmine_coord].edges[max_index].allays) - 1
-            new_pacman = Pacman(mine)
-            new_pacman.index = new_pacman.index + new_pacman.way
-            edge = self.nodes[pacmine_coord].edges[max_index]
-            new_pacman.y , new_pacman.x = edge.allays[new_pacman.index].coord
-            return new_pacman
+            pacman_id = mine.id
+            n1, g1 , p1 = self.pather.solve(self,pacman_id)
+            pacman_mine = self.pather.reduce(self,pacman_id)
+            self.mine[pacman_id] = pacman_mine
+            print(pacman_id)
+            for c1 in pacman_mine.path:
+                print(f'({c1}) --> ',end='')
+            print()
 
     def __next__(self):
-        mines = []
-        for _, mine in self.mine.items():
-            p1 = self.find_next_move(mine, self.mine.values() )
-            mines.append(p1)
-        return mines
+        print("NEXT")
+        for _, p1 in self.mine.items():
+            print(p1)
+
+        kanban_predicted = BoardNodesAndEdges(self)
+        for key, mine in kanban_predicted.mine.items():
+            print(f'KEY {key} MINE {mine}')
+            mine_predicted = Pacman(mine)
+            kanban_predicted.mine[key] = mine_predicted
+            kanban_predicted.find_next2_move( mine_predicted )
+        return kanban_predicted
 
 class Pacman():
 
@@ -497,15 +465,10 @@ class Pacman():
         self.out = ''
         self.state = None
         self.x, self.y, self.type = 0,0,0
-        self.index = PAC_INIT_INDEX                                 # Index in the edge
-        self.way = PAC_INIT_WAY                                    # Way in the edge
-        self.edge = None
         self.path = None
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
             self.x, self.y, self.type = clone.x, clone.y, clone.type
-            self.index, self.way = clone.index, clone.way
-            self.edge = clone.edge
             self.path = copy.copy(clone.path)
 
     def __str__(self):
@@ -528,9 +491,15 @@ class Pacman():
         elif self.coord == prev.coord :
             self.way = 1 if self.way == -1 else -1
 
-    def write_move(self,intext):
+    def write_move(self,in_text):
+        print(self.id)
+        for c1 in self.path:
+            print(f'({c1}) --> ',end='')
+        print()
+        c1 =  self.path.pop(0)
+        self.y , self.x = c1.coord
         t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
-        t = t if intext == '' else f'{intext} | {t}'
+        t = t if in_text == '' else f'{in_text} | {t}'
         return t
 
     @property
@@ -676,8 +645,9 @@ if __name__ == '__main__':
         kanban_node.update()
 
         # OUT
-        next_pacmans = next(iter(kanban_node))
+        kanban_node = next(iter(kanban_node))
         out = ''
-        for p1 in next_pacmans:
+        for _, p1 in kanban_node.mine.items():
+            print(p1)
             out = p1.write_move(out)
         print(out)
