@@ -9,7 +9,7 @@ WIDTH, HEIGHT, MINE, OPP = 0, 0, 1, 0
 PACMAN_MAP = []
 EMPTY_SYMBOLS = ' '
 
-TYPE_SET = { 'NEUTRAL' : 0 , 'ROCK' : 1 , 'PAPER' : 2 , 'SCISSORS' : 3 }
+TYPE_SET = { 'NEUTRAL' : 0 , 'ROCK' : 1 , 'PAPER' : 2 , 'SCISSORS' : 3 , 'DEAD' : 4 }
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 NB_NODES = 0
 PAC_INIT_INDEX = -1
@@ -61,7 +61,7 @@ class PathPlanning():
 
                 node_next = e1.finish(node_current)
                 cost_prev, path_prev = distgain[node_next]
-                cost_next = state.heuristic(kanban_node,e1)
+                cost_next = state.heuristic(kanban_node,mine,e1)
 
                 if cost_next <= 0 :
                     #print(f'node_curr {node_current} cost_curr {cost_curr} cost_prev {cost_prev}')
@@ -114,7 +114,7 @@ class PathPlanning():
                 gain_next = g1
                 path_next = t1
 
-        return (noàde_next, gain_next, path_next)
+        return (node_next, gain_next, path_next)
 
     def reduce(self,kanban_node,pacman_id):
         current_node = self.first
@@ -122,26 +122,31 @@ class PathPlanning():
         pacman = Pacman(kanban_node.mine[pacman_id])
         pacman.path = []
 
+        print(f'REDUCE {pacman_id}',file=sys.stderr)
         for e1 in self.path :
-            way = -1
+            #for c1 in e1.allays:
+            #    print(f'({c1}) ',end='',file=sys.stderr)
+            #print('',file=sys.stderr)
+            way = []
             if current_node.coord == e1.allays[0].coord :
-                way = 1
+                way = copy.copy(e1.allays)
             else :
-                way = -1
+                way = copy.copy(e1.allays)[::-1]
 
-            if current_node.coord == e1.allays[-1].coord :
-                for c1 in e1.allays[1:-1:1]:
-                    pacman.path.append(c1)
-                for c1 in e1.allays[-2::-1]:
-                    pacman.path.append(c1)
-            elif way == 1 :
-                for c1 in e1.allays[1::1]:
-                    pacman.path.append(c1)
-            else:
-                for c1 in e1.allays[-2::-1]:
-                    pacman.path.append(c1)
+            if current_node.coord == way[-1].coord :
+                way.pop(-1)
+                for c1 in way[1::1]:    pacman.path.append(c1)
+                way = way[::-1]
+                for c1 in way[0::1]:    pacman.path.append(c1)
+            else :
+                for c1 in way[1::1]:    pacman.path.append(c1)
 
-            current_node = e1.allays[-1] if way == 1 else e1.allays[0]
+            current_node = pacman.path[-1]
+
+        #print(f'pacman {pacman}',file=sys.stderr)
+        #for c1 in pacman.path:
+        #    print(f'({c1}) -> ',end='',file=sys.stderr)
+        #print('',file=sys.stderr)
 
         return pacman
 
@@ -154,12 +159,19 @@ class StrategyThief:
     def __str__(self):
         return 'StrategyThief'
 
-    def heuristic(self,kanban_node,edge):
+    def heuristic(self,kanban_node,mine,edge):
         gain = 0
         for _, opp1 in kanban_node.opp.items() :
             coord_opp = opp1.coord
             cases_opp = [e1 for e1 in edge.allays if e1.coord == coord_opp ]
             if len(cases_opp) != 0 :
+                return float('Inf')
+
+        for _, mine1 in kanban_node.mine.items() :
+            if mine1.coord == mine.coord:   continue
+            coord_mine = mine1.coord
+            cases_mine = [e1 for e1 in edge.allays if e1.coord == coord_mine ]
+            if len(cases_mine) != 0 :
                 return float('Inf')
 
         for e1 in edge.allays[1:]:
@@ -280,7 +292,7 @@ class BoardNodesAndEdges():
         self.pather = None
         if clone is not None:
             self.nodes = copy.copy(clone.nodes)     #   Dynamic
-            self.edges = copy.copy(clone.cases)     #   Dynamic
+            self.cases = copy.copy(clone.cases)     #   Dynamic
             self.edges = clone.edges                #   Static
             self.opp = copy.copy(clone.opp)         #   Dynamic
             self.mine = copy.copy(clone.mine)       #   Dynamic
@@ -381,7 +393,6 @@ class BoardNodesAndEdges():
                 edge.allays.append(next_case)
                 edge.allays.append(first_case)
                 self.edges.append(edge)
-                print(f'FINAL =>| {edge}',file=sys.stderr)
                 return
 
         elif next_coord in self.nodes :
@@ -392,7 +403,6 @@ class BoardNodesAndEdges():
             first_coord = first_case.coord
             next_case.edges.append(edge)
             self.edges.append(edge)
-            #print(f'FINAL <=> {edge}')
             return
 
     def set_up(self,board):
@@ -400,12 +410,10 @@ class BoardNodesAndEdges():
         self.set_nodes_and_edges(board)
 
     def __iter__(self):
-        print("ITER")
         return self
 
     def find_next2_move(self,mine):
         pacmine_y, pacmine_x = pacmine_coord = mine.coord
-        #print(f'pacmine_coord x {pacmine_x} y {pacmine_y} pacopp_coord x {pacopp_x} y {pacopp_y}')
         if pacmine_coord in self.cases :
 
             # TODO: Can be performed
@@ -431,28 +439,24 @@ class BoardNodesAndEdges():
                             mine.path.pop(0)
                             break
 
-            else:
-                mine.path.pop(0)
-
         elif pacmine_coord in self.nodes :
 
             pacman_id = mine.id
             n1, g1 , p1 = self.pather.solve(self,pacman_id)
             pacman_mine = self.pather.reduce(self,pacman_id)
             self.mine[pacman_id] = pacman_mine
-            print(pacman_id)
+
+            print(f'SOLUCE FOUND {pacman_id}',file=sys.stderr)
             for c1 in pacman_mine.path:
-                print(f'({c1}) --> ',end='')
-            print()
+                print(f'({c1}) -> ',end='',file=sys.stderr)
+            print('',file=sys.stderr)
+
 
     def __next__(self):
-        print("NEXT")
-        for _, p1 in self.mine.items():
-            print(p1)
 
         kanban_predicted = BoardNodesAndEdges(self)
+
         for key, mine in kanban_predicted.mine.items():
-            print(f'KEY {key} MINE {mine}')
             mine_predicted = Pacman(mine)
             kanban_predicted.mine[key] = mine_predicted
             kanban_predicted.find_next2_move( mine_predicted )
@@ -466,6 +470,7 @@ class Pacman():
         self.state = None
         self.x, self.y, self.type = 0,0,0
         self.path = None
+
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
             self.x, self.y, self.type = clone.x, clone.y, clone.type
@@ -483,20 +488,23 @@ class Pacman():
     def update(self,state):
         state = [int(i) for i in state]
         state.append(1)
+        if self.mine == MINE and self.x == state[0] and self.y == state[1]:
+            self.path.pop(0)
+
         self.x, self.y, self.type = state[0], state[1], state[2]
 
-    def correction(self,next,prev):
-        if self.coord == next.coord :
-            self.index, self.way = next.index, next.way
-        elif self.coord == prev.coord :
-            self.way = 1 if self.way == -1 else -1
+    #def correction(self,next,prev):
+    #    if self.coord == next.coord :
+    #        self.index, self.way = next.index, next.way
+    #    elif self.coord == prev.coord :
+    #        self.way = 1 if self.way == -1 else -1
 
     def write_move(self,in_text):
-        print(self.id)
+        print(f'ID {self.id}',file=sys.stderr)
         for c1 in self.path:
-            print(f'({c1}) --> ',end='')
-        print()
-        c1 =  self.path.pop(0)
+            print(f'({c1}) -> ', end='', file=sys.stderr)
+        print('',file=sys.stderr)
+        c1 =  self.path[0]
         self.y , self.x = c1.coord
         t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
         t = t if in_text == '' else f'{in_text} | {t}'
@@ -551,10 +559,10 @@ if __name__ == '__main__':
         mine_score, opp_score = [int(i) for i in input().split()]
         print(f'MINE_SCORE {mine_score} OPP_SCORE {opp_score}',file=sys.stderr)
 
-        prev_pacmans = []
-        for p1 in pacman_board.values():
-            if p1.mine == MINE :
-                prev_pacmans.append( Pacman(p1) )
+        #prev_pacmans = []
+        #for p1 in pacman_board.values():
+        #    if p1.mine == MINE :
+        #        prev_pacmans.append( Pacman(p1) )
 
         # 2
         visible_pac_count = int(input())
@@ -571,15 +579,24 @@ if __name__ == '__main__':
                 pacman_id = 1 * (pacman_id + 1)
                 mine_pac_count = mine_pac_count + 1
 
+            if state_in[4] == 4 :
+                #   DEAD
+                del pacman_board[pacman_id]
+                if mine == OPP :
+                    del kanban_node.opp[-pacman_id]
+                else :
+                    del kanban_node.mine[pacman_id]
+
+
             if pacman_id in pacman_board :
                 pacman_board[pacman_id].update(state_in[2:])
                 # Technical Debt
-                for predict_p1 in next_pacmans:
-                    if predict_p1.id == pacman_id :
-                        for previous_p1 in prev_pacmans:
-                            if previous_p1.id == pacman_id :
-                                print(f'MINE {pacman_board[pacman_id]}',file=sys.stderr)
-                                pacman_board[pacman_id].correction(predict_p1, previous_p1)
+                #for predict_p1 in next_pacmans:
+                #    if predict_p1.id == pacman_id :
+                #        for previous_p1 in prev_pacmans:
+                #            if previous_p1.id == pacman_id :
+                #                print(f'MINE {pacman_board[pacman_id]}',file=sys.stderr)
+                #                pacman_board[pacman_id].correction(predict_p1, previous_p1)
 
                 if pacman_board[pacman_id].mine == MINE :
                     pacman_agent = board_agent[pacman_id]
@@ -587,7 +604,6 @@ if __name__ == '__main__':
                     board_agent[pacman_id] = pacman_agent
 
             else :
-                print(f'CREATE NEW PACMAN {pacman_id}',file=sys.stderr)
                 pacman_new = Pacman(None)
                 pacman_new.id, pacman_new.mine = pacman_id, mine
                 pacman_board[pacman_id] = pacman_new
@@ -598,17 +614,14 @@ if __name__ == '__main__':
                     pacman_agent.id, pacman_agent.mine = pacman_new.id, pacman_new
                     board_agent[ pacman_id ] = pacman_agent
 
-        print(f'PACMAN {visible_pac_count}', file=sys.stderr)
-        print(f'MINES {mine_pac_count}',file=sys.stderr)
-        print(f'OPPS {mine_pac_count * 2 - visible_pac_count}',file=sys.stderr)
+        print(f'PACMAN {visible_pac_count}', file=sys.stderr,end=' ')
+        print(f'MINES {mine_pac_count}',file=sys.stderr, end=' ')
+        print(f'OPPS {mine_pac_count * 2 - visible_pac_count}',file=sys.stderr, end=' ')
         for i1 in range(1,mine_pac_count+1):
             if -i1 not in pacman_board:
                 pacman_opp = Pacman(pacman_board[i1])
-                print(f'BEFORE PACMAN OPP {pacman_opp}',file=sys.stderr)
-                print(f'WIDTH {WIDTH}',file=sys.stderr)
                 pacman_opp.mine = OPP
                 pacman_opp.x = WIDTH - 1 - pacman_opp.x
-                print(f'NEW PACMAN OPP {pacman_opp}',file=sys.stderr)
         # --> Add correction <--
 
         # 3
@@ -619,7 +632,6 @@ if __name__ == '__main__':
             pellet_line = [int(j) for j in input().split()]
             pellet_x, pellet_y, pellet = pellet_line[0],pellet_line[1],pellet_line[2]
             if pellet == 10 :
-                print(f'JACKPOT {pellet_line}',file=sys.stderr)
                 pellet_coord = pellet_y, pellet_x
                 if pellet_coord in kanban_node.nodes:
                     kanban_node.nodes[pellet_coord].pellet = pellet
@@ -644,10 +656,18 @@ if __name__ == '__main__':
                 continue
         kanban_node.update()
 
+        # BEFORE
+
         # OUT
         kanban_node = next(iter(kanban_node))
+
+        # AFTER
+
         out = ''
         for _, p1 in kanban_node.mine.items():
-            print(p1)
             out = p1.write_move(out)
         print(out)
+
+        # UPDATE NEW DATA
+        for _,p1 in kanban_node.mine.items():
+            pacman_board[p1.id] = p1
