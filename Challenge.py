@@ -507,7 +507,7 @@ class Pacman():
         c1 =  self.path[0]
         self.y , self.x = c1.coord
         t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
-        t = t if in_text == '' else f'{in_text} | {t}'
+        t = f' {t}' if in_text == '' else f'{in_text} | {t}'
         return t
 
     @property
