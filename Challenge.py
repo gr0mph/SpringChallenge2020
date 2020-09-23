@@ -9,6 +9,7 @@ WIDTH, HEIGHT, MINE, OPP = 0, 0, 1, 0
 PACMAN_MAP = []
 EMPTY_SYMBOLS = ' '
 
+TYPE_GOAL = { 'NONE' : 0 , 'SUPER_PELLET' : 1 , 'OPP_PACMAN' : 2 , 'NOT_GUIDED' : 3 }
 TYPE_SET = { 'NEUTRAL' : 0 , 'ROCK' : 1 , 'PAPER' : 2 , 'SCISSORS' : 3 , 'DEAD' : 4 }
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 NB_NODES = 0
@@ -116,6 +117,115 @@ class PathPlanning():
 
         return (node_next, gain_next, path_next)
 
+    def solve2(self,kanban_node):
+        # Create Queue
+        queue = []
+        dist_gain = {}
+
+        for _, n1 in kanban_node.nodes.items():
+            dist_gain[n1] = (float('Inf'),(0,0,None,[]) )
+
+        for k1, m1 in kanban_node.mine.items():
+            print(k1)
+            print(m1)
+            if m1.coord in kanban_node.nodes:
+                heapq.heappush( queue , ( 0 , kanban_node.nodes[m1.coord] ) )
+                dist_gain[ kanban_node.nodes[ m1.coord ] ] = (0,k1,m1,[])         #   Gain
+                                                                                #   ID
+                                                                                #   Pacman
+                                                                                #   Path
+            elif m1.coord in kanban_node.cases:
+                heapq.heappush( queue , ( 0 , kanban_node.cases[m1.coord] ) )
+                dist_gain[ kanban_node.cases[ m1.coord ] ] = (0,k1,m1,[])         #   Gain
+                                                                                #   ID
+                                                                                #   Pacman
+                                                                                #   Path
+
+        # TODO:
+        state = StrategyThief(None)
+
+        while len(queue):
+            ( cost_curr , node_curr ) = heapq.heappop(queue)
+            _, key_curr, mine_curr, path_curr = dist_gain[ node_curr ]
+
+            if node_curr.refer is not None :
+                # Warning this node in reality is simply a case
+                # Find 2 next node
+
+            else:
+                for e1 in node_curr.edges:
+                    node_next = e1.finish(node_current)
+                    cost_prev, key_prev, mine_prev, path_prev = dist_gain[ node_next ]
+
+                    cost_next, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_current, node_next, e1)
+
+
+        return
+
+        while len(queue):
+            ( cost_curr , node_current ) = heapq.heappop(queue)
+            _, path_curr = distgain[node_current]
+
+            for e1 in node_current.edges:
+
+                node_next = e1.finish(node_current)
+                cost_prev, path_prev = distgain[node_next]
+                cost_next = state.heuristic(kanban_node,mine,e1)
+
+                if cost_next <= 0 :
+                    #print(f'node_curr {node_current} cost_curr {cost_curr} cost_prev {cost_prev}')
+
+                    if 1 + cost_curr < cost_prev :
+                        # Update distgain
+                        cost_update = 1 + cost_curr
+                        gain_update = cost_next + cost_curr
+                        # Update path
+                        path_update = copy.copy(path_curr)
+                        path_update.append(e1)
+
+                        distgain[node_next] = (cost_update,path_update)
+                        gaingain[node_next] = (gain_update,path_update)
+                        #print(f'cost_update {cost_update}')
+                        #print(f'node_next {node_next}')
+                        heapq.heappush( queue , ( cost_update , node_next ) )
+                        #print(f'done')
+                        self.last , self.gain, self.path = node_next, gain_update, path_update
+                        return (node_next,gain_update,path_update)
+
+                else :
+                    if cost_next + cost_curr < cost_prev :
+                        # Update distgain
+                        cost_update = cost_next + cost_curr
+                        # Update path
+                        path_update = copy.copy(path_curr)
+                        path_update.append(e1)
+
+                        distgain[node_next] = (cost_update,path_update)
+                        #print(f'cost_update {cost_update}')
+                        #print(f'node_next {node_next}')
+                        heapq.heappush( queue , ( cost_update , node_next ) )
+                        #print(f'done')
+
+        del distgain[start_node]
+        gain = -float('Inf')
+        edge_path = []
+
+        # Pas cool
+        #for n1, t1 in gaingain.items():
+        #    g1, p1 = t1
+        #    if g1 > gain : gain, edge_path = g1, t1
+
+        node_next, gain_next, path_next = None, 0, []
+        for n1, t1 in distgain.items():
+            g1, p1 = t1
+            if g1 > gain_next :
+                node_next = n1
+                gain_next = g1
+                path_next = t1
+
+        return (node_next, gain_next, path_next)
+
+
     def reduce(self,kanban_node,pacman_id):
         current_node = self.first
         way = 1
@@ -124,9 +234,6 @@ class PathPlanning():
 
         print(f'REDUCE {pacman_id}',file=sys.stderr)
         for e1 in self.path :
-            #for c1 in e1.allays:
-            #    print(f'({c1}) ',end='',file=sys.stderr)
-            #print('',file=sys.stderr)
             way = []
             if current_node.coord == e1.allays[0].coord :
                 way = copy.copy(e1.allays)
@@ -142,11 +249,6 @@ class PathPlanning():
                 for c1 in way[1::1]:    pacman.path.append(c1)
 
             current_node = pacman.path[-1]
-
-        #print(f'pacman {pacman}',file=sys.stderr)
-        #for c1 in pacman.path:
-        #    print(f'({c1}) -> ',end='',file=sys.stderr)
-        #print('',file=sys.stderr)
 
         return pacman
 
@@ -179,6 +281,58 @@ class StrategyThief:
         gain = len(edge.allays) - gain
         return gain
 
+    def heuristic2(self,kanban_node,mine_curr, node_curr, node_next, edge):
+        #   Return tuple
+
+        #   Return cost next between node_curr and node_next
+        #   Float("Inf") IF meet another PACMAN
+
+        #   Return PATH
+
+        #   Return goal IF reached  3 GOAL
+        #   [ 'NONE' , 'SUPER_PELLET' , 'OPP_PACMAN' , 'NOT_GUIDED' ]
+
+        #   Return specific PATH IF A GOAL reached
+        #   [ (coord) , (coord) , (coord) , ... ]
+        gain = 0
+        len = 0
+        cost = 0
+        path = []
+        is_opp_pacman, is_super_pellet, is_not_guided = False, False, False
+        path_opp_pacman, path_super_pellet, path_not_guided = [], [], []
+
+        work = []
+        if edge.allays[0] == node_next :    work = edge.allays[::-1]
+        else :                              work = edge.allays
+        while work[0] != node_curr :        work.pop(0)
+
+        work.pop(0)                         # Skip current
+        for c1 in work :
+            len, gain = len + 1, gain + MIN(c1.pellet,1)
+            path.append(c1)
+            if is_opp_pacman != True and c1.pacman < 0 :
+                len = Float('Inf')
+                is_opp_pacman = True
+                path_opp_pacman = copy.copy(path)
+
+            if is_not_guided != True and c1.guided == False :
+                is_not_guided = True
+
+            if is_super_pellet != True and c1.pellet == 10 :
+                is_super_pellet = True
+                path_super_pellet = copy.copy(path)
+
+        if is_not_guided == True:
+            path_not_guided = copy.copy(path)
+            path_not_guided.pop(-1)
+
+        gain = len - gain
+        goal, path2 = 'NONE', []
+        if is_opp_pacman == True : goal, path2 = 'OPP_PACMAN' , path_opp_pacman
+        elif is_super_pellet == True : goal, path2 = 'SUPER_PELLET' , path_super_pellet
+        elif is_not_guided == True : goal, path2 = 'NOT_GUIDED' , path_not_guided
+
+        return gain, path, goal, path2
 
 class StrategyBerserk:
 
@@ -201,18 +355,27 @@ class Case():
         self.id = -1
         self.coord = -1, -1     #   row or y,   col or x
         self.refer = None
-        self.pellet = 0
+        self.pellet, self.guided, self.pacman = 0, False, 0 #   Value,  Bool,   ID (positive: mine)
         self.way = []
+        self.guided = 0
         if clone is not None:
             self.id = clone.id
             self.coord = clone.coord
             self.refer = clone.refer
             self.pellet = clone.pellet
+            self.guided = clone.guided
+            self.pacman = clone.pacman
             self.way = copy.copy(clone.way)
 
     def __str__(self):
         y1, x1 = self.coord
         return f'x {x1} y {y1}'
+
+    def __eq__(self,other):
+        return self.id - other.id
+
+    def __hash__(self):
+        return self.id
 
 class Node(Case):
     def __init__(self,clone):
@@ -233,7 +396,6 @@ class Node(Case):
 class Edge():
     def __init__(self,clone):
         self.allays = []
-        self.visited = False
 
     def __str__(self):
         text = ''
@@ -412,6 +574,10 @@ class BoardNodesAndEdges():
     def __iter__(self):
         return self
 
+    def find_next3_move(self):
+        print("HERE")
+        self.pather.solve2(self)
+
     def find_next2_move(self,mine):
         pacmine_y, pacmine_x = pacmine_coord = mine.coord
         if pacmine_coord in self.cases :
@@ -455,11 +621,18 @@ class BoardNodesAndEdges():
     def __next__(self):
 
         kanban_predicted = BoardNodesAndEdges(self)
+        for k1, m1 in kanban_predicted.mine.items():
+            mine_next = Pacman(m1)
+            kanban_predicted.mine[k1] = mine_next
 
-        for key, mine in kanban_predicted.mine.items():
-            mine_predicted = Pacman(mine)
-            kanban_predicted.mine[key] = mine_predicted
-            kanban_predicted.find_next2_move( mine_predicted )
+        kanban_predicted.find_next3_move()
+
+        #kanban_predicted = BoardNodesAndEdges(self)
+
+        #for key, mine in kanban_predicted.mine.items():
+        #    mine_predicted = Pacman(mine)
+        #    kanban_predicted.mine[key] = mine_predicted
+        #    kanban_predicted.find_next2_move( mine_predicted )
         return kanban_predicted
 
 class Pacman():
@@ -480,9 +653,9 @@ class Pacman():
         if self is None :
             return 'Pacman None...'
         if self.mine == MINE :
-            return f'({(+self.id-1),self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
+            return f'({+self.id-1,self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
         else :
-            return f'({(-self.id+1),self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
+            return f'({-self.id+1,self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
 
 
     def update(self,state):
