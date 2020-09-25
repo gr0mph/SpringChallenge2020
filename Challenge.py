@@ -182,25 +182,14 @@ class PathPlanning():
                     cost_next, cost_path, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_curr, node_next, e1)
 
                     if yield_goal != 'NONE' :
-                        print(yield_goal)
-                        text = ' => '.join(map(str,path_curr))
-                        print(f' PATH_CURRENT {text}')
-                        text = ' => '.join(map(str,yield_path))
-                        print(f' PATH_CURRENT {text}')
 
+                        # Update path
                         path_update = copy.copy(path_curr)
                         path_update.extend(yield_path)
 
                         yield ( yield_goal , key_curr , mine_curr , path_update )
 
                     if cost_next + cost_curr < cost_prev :
-
-                        print(f'MINE {mine_curr}')
-                        text = ' => '.join(map(str,path_curr))
-                        print(f' PATH_CURRENT {text}')
-                        text = ' => '.join(map(str,cost_path))
-                        print(f' PATH_COST {text}')
-                        print()
 
                         # Update cost
                         cost_update = cost_next + cost_curr
@@ -211,10 +200,7 @@ class PathPlanning():
 
                         # Update dist_gain
                         dist_gain[node_next] = (cost_update,key_curr,mine_curr,path_update)
-                        #print(f'cost_update {cost_update}')
-                        #print(f'node_next {node_next}')
                         heapq.heappush( queue , ( cost_update , node_next ) )
-                        #print(f'done')
 
         #for k1, d1 in dist_gain.items():
         #    path_text = ' => '.join(map(str,path_prev))
@@ -298,24 +284,12 @@ class StrategyThief:
         is_opp_pacman, is_super_pellet, is_not_guided = False, False, False
         path_opp_pacman, path_super_pellet, path_not_guided = [], [], []
 
-        print(f'mine_curr {mine_curr}')
-        print(f'node_curr {node_curr}')
-        print(f'node_next {node_next}')
-        print(f'edge {edge}')
 
         work = copy.copy(edge.allays)
-        print(f'check 0 : {edge.allays[0]} node_next {node_next}')
-
-        if edge.allays[0].coord == node_next.coord :
-            print("REVERSE") ; work = work[::-1]
+        if edge.allays[0].coord == node_next.coord :    work = work[::-1]
         while work[0].coord != node_curr.coord :        work.pop(0)
 
         work.pop(0)                         # Skip current
-
-        text = ' => '.join(map(str,work))
-        print(text)
-        print()
-
         for c1 in work :
             len, gain = len + 1, gain + min(c1.pellet,1)
             path.append(c1)
@@ -328,7 +302,6 @@ class StrategyThief:
                 is_not_guided = True
 
             if is_super_pellet != True and c1.pellet == 10 :
-                #print(f'**** {c1} ****')
                 is_super_pellet = True
                 path_super_pellet = copy.copy(path)
 
@@ -341,14 +314,6 @@ class StrategyThief:
         if is_opp_pacman == True : goal, path2 = 'OPP_PACMAN' , path_opp_pacman
         elif is_super_pellet == True : goal, path2 = 'SUPER_PELLET' , path_super_pellet
         elif is_not_guided == True : goal, path2 = 'NOT_GUIDED' , path_not_guided
-
-        # DEBUG
-        #if is_super_pellet == True :
-        #    text = ' => '.join(map(str,path))
-        #    print(f'PATH_ {text}')
-        #    text = ' => '.join(map(str,path2))
-        #    print(f'PATH2 {text}')
-
 
         return gain, path, goal, path2
 
@@ -537,16 +502,12 @@ class BoardNodesAndEdges():
         for k_coord, k_case in self.nodes.items():
             previous_case = k_case
             previous_coord = k_coord
-            #print(f'NODE ({k_case})')
             while len(k_case.way) > 0 :
                 edge = Edge(None)
                 edge.allays.append(k_case)
                 way = k_case.way.pop(0)
-                #print(f'START {way}')
                 k_case.edges.append(edge)
                 self.find_next2_case(k_coord,k_case,way,edge)
-
-            #print()
 
     def find_next2_case(self,prev_coord,prev_case,prev_way,edge):
         y_row,  x_col = prev_coord
@@ -599,13 +560,29 @@ class BoardNodesAndEdges():
         return self
 
     def find_next3_move(self):
-        print("HERE")
-        a = ', '
-        for yield_goal , key_curr , mine_curr , yield_path in  self.pather.solve2(self):
+        pacman_result = {}
 
-            print("YIELD")
-            text = ' => '.join(map(str,yield_path))
-            print(f' {yield_goal} ID {key_curr} MINE {mine_curr} PATH {text}')
+        for yield_goal , key_curr , mine_curr , yield_path in  self.pather.solve2(self):
+            tuple_result = (key_curr,TYPE_GOAL[yield_goal])
+            pacman_result[tuple_result] = yield_path
+
+        for k1, p1 in pacman_result.items():
+            text = ' => '.join(map(str,p1))
+            print(f' {k1} PATH {text}')
+
+        for i1,m1 in self.mine.items():
+
+            desired_super_pellet = (i1,TYPE_GOAL['SUPER_PELLET'])
+            desired_not_guided = (i1,TYPE_GOAL['NOT_GUIDED'])
+            desired_opp_pacman = (i1,TYPE_GOAL['OPP_PACMAN'])
+
+            if desired_super_pellet in pacman_result:
+                m1.path = pacman_result[desired_super_pellet]
+            elif desired_not_guided in pacman_result:
+                m1.path = pacman_result[desired_not_guided]
+            elif desired_opp_pacman in pacman_result:
+                m1.path = pacman_result[desired_opp_pacman]
+
 
 
     def find_next2_move(self,mine):
@@ -641,12 +618,6 @@ class BoardNodesAndEdges():
             n1, g1 , p1 = self.pather.solve(self,pacman_id)
             pacman_mine = self.pather.reduce(self,pacman_id)
             self.mine[pacman_id] = pacman_mine
-
-            print(f'SOLUCE FOUND {pacman_id}',file=sys.stderr)
-            for c1 in pacman_mine.path:
-                print(f'({c1}) -> ',end='',file=sys.stderr)
-            print('',file=sys.stderr)
-
 
     def __next__(self):
 
