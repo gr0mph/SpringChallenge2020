@@ -130,13 +130,13 @@ class PathPlanning():
             print(m1)
             if m1.coord in kanban_node.nodes:
                 heapq.heappush( queue , ( 0 , kanban_node.nodes[m1.coord] ) )
-                dist_gain[ kanban_node.nodes[ m1.coord ] ] = (0,k1,m1,[])         #   Gain
+                dist_gain[ kanban_node.nodes[ m1.coord ] ] = (0,k1,m1,[])       #   Gain
                                                                                 #   ID
                                                                                 #   Pacman
                                                                                 #   Path
             elif m1.coord in kanban_node.cases:
                 heapq.heappush( queue , ( 0 , kanban_node.cases[m1.coord] ) )
-                dist_gain[ kanban_node.cases[ m1.coord ] ] = (0,k1,m1,[])         #   Gain
+                dist_gain[ kanban_node.cases[ m1.coord ] ] = (0,k1,m1,[])       #   Gain
                                                                                 #   ID
                                                                                 #   Pacman
                                                                                 #   Path
@@ -148,83 +148,42 @@ class PathPlanning():
             ( cost_curr , node_curr ) = heapq.heappop(queue)
             _, key_curr, mine_curr, path_curr = dist_gain[ node_curr ]
 
+            edges = []
             if node_curr.refer is not None :
-                # Warning this node in reality is simply a case
-                # Find 2 next node
+                edges.append(node_curr.refer)
+            else :
+                edges =  node_curr.edges
 
-            else:
-                for e1 in node_curr.edges:
-                    node_next = e1.finish(node_current)
+            for e1 in edges:
+                for node_next in e1.finish(node_current):
+
                     cost_prev, key_prev, mine_prev, path_prev = dist_gain[ node_next ]
+                    cost_next, cost_path, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_current, node_next, e1)
 
-                    cost_next, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_current, node_next, e1)
+                    for p1 in cost_path:
+                        print(f'{p1}',file=sys.stderr,end='')
 
+                    if yield_goal != 'NONE' :
+                        yield_path = copy.copy(path_curr)
+                        yield_path.extend(yield_path)
+                        yield ( yield_goal , key_curr , mine_curr , yield_path )
+
+                    if cost_next + cost_curr < cost_prev :
+                        # Update cost
+                        cost_update = cost_next + cost_curr
+
+                        # Update path
+                        path_update = copy.copy(path_curr)
+                        path_update.extend(cost_path)
+
+                        # Update dist_gain
+                        dist_gain[node_next] = (cost_update,key_curr,mine_curr,path_update)
+                        #print(f'cost_update {cost_update}')
+                        #print(f'node_next {node_next}')
+                        heapq.heappush( queue , ( cost_update , node_next ) )
+                        #print(f'done')
 
         return
-
-        while len(queue):
-            ( cost_curr , node_current ) = heapq.heappop(queue)
-            _, path_curr = distgain[node_current]
-
-            for e1 in node_current.edges:
-
-                node_next = e1.finish(node_current)
-                cost_prev, path_prev = distgain[node_next]
-                cost_next = state.heuristic(kanban_node,mine,e1)
-
-                if cost_next <= 0 :
-                    #print(f'node_curr {node_current} cost_curr {cost_curr} cost_prev {cost_prev}')
-
-                    if 1 + cost_curr < cost_prev :
-                        # Update distgain
-                        cost_update = 1 + cost_curr
-                        gain_update = cost_next + cost_curr
-                        # Update path
-                        path_update = copy.copy(path_curr)
-                        path_update.append(e1)
-
-                        distgain[node_next] = (cost_update,path_update)
-                        gaingain[node_next] = (gain_update,path_update)
-                        #print(f'cost_update {cost_update}')
-                        #print(f'node_next {node_next}')
-                        heapq.heappush( queue , ( cost_update , node_next ) )
-                        #print(f'done')
-                        self.last , self.gain, self.path = node_next, gain_update, path_update
-                        return (node_next,gain_update,path_update)
-
-                else :
-                    if cost_next + cost_curr < cost_prev :
-                        # Update distgain
-                        cost_update = cost_next + cost_curr
-                        # Update path
-                        path_update = copy.copy(path_curr)
-                        path_update.append(e1)
-
-                        distgain[node_next] = (cost_update,path_update)
-                        #print(f'cost_update {cost_update}')
-                        #print(f'node_next {node_next}')
-                        heapq.heappush( queue , ( cost_update , node_next ) )
-                        #print(f'done')
-
-        del distgain[start_node]
-        gain = -float('Inf')
-        edge_path = []
-
-        # Pas cool
-        #for n1, t1 in gaingain.items():
-        #    g1, p1 = t1
-        #    if g1 > gain : gain, edge_path = g1, t1
-
-        node_next, gain_next, path_next = None, 0, []
-        for n1, t1 in distgain.items():
-            g1, p1 = t1
-            if g1 > gain_next :
-                node_next = n1
-                gain_next = g1
-                path_next = t1
-
-        return (node_next, gain_next, path_next)
-
 
     def reduce(self,kanban_node,pacman_id):
         current_node = self.first
@@ -406,7 +365,13 @@ class Edge():
         return text
 
     def finish(self,node):
-        return self.allays[0] if node.coord != self.allays[0].coord else self.allays[-1]
+        if node.coord == self.allays[0].coord :
+            yield self.allays[-1]
+        elif node.coord == self.allays[-1].coord :
+            yield self.allays[0]
+        else:
+            yield self.allays[0]
+            yield self.allays[-1]
 
 class BoardAgent():
     def __init__(self,clone):
@@ -576,7 +541,8 @@ class BoardNodesAndEdges():
 
     def find_next3_move(self):
         print("HERE")
-        self.pather.solve2(self)
+        for yield_goal , key_curr , mine_curr , yield_path in  self.pather.solve2(self):
+            print(yield_goal)
 
     def find_next2_move(self,mine):
         pacmine_y, pacmine_x = pacmine_coord = mine.coord
