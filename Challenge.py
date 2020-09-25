@@ -126,8 +126,6 @@ class PathPlanning():
             dist_gain[n1] = (float('Inf') , 0 , None , [] )
 
         for k1, m1 in kanban_node.mine.items():
-            print(k1)
-            print(m1)
             if m1.coord in kanban_node.nodes:
                 heapq.heappush( queue , ( 0 , kanban_node.nodes[m1.coord] ) )
                 dist_gain[ kanban_node.nodes[ m1.coord ] ] = (0,k1,m1,[])       #   Gain
@@ -141,13 +139,13 @@ class PathPlanning():
                                                                                 #   Pacman
                                                                                 #   Path
 
-        i1 = 0
-        for k1, d1 in dist_gain.items():
-            cost_prev, key_prev, mine_prev, path_prev = d1
-            print(f' ({k1}) ',end='')
-            i1 = (i1 + 1) % 6
-            if i1 == 0:
-                print()
+        #i1 = 0
+        #for k1, d1 in dist_gain.items():
+        #    cost_prev, key_prev, mine_prev, path_prev = d1
+        #    print(f' ({k1}) ',end='')
+        #    i1 = (i1 + 1) % 6
+        #    if i1 == 0:
+        #        print()
 
         # TODO:
         state = StrategyThief(None)
@@ -156,9 +154,8 @@ class PathPlanning():
             ( cost_curr , node_curr ) = heapq.heappop(queue)
             _, key_curr, mine_curr, path_curr = dist_gain[ node_curr ]
 
-            #a = ', '
-            path_text = ' => '.join(map(str,path_curr))
-            print(f'COST_CURR {cost_curr} PACMAN {key_curr} {mine_curr} PATH {path_text}')
+            #path_text = ' => '.join(map(str,path_curr))
+            #print(f'COST_CURR {cost_curr} PACMAN {key_curr} {mine_curr} PATH {path_text}')
 
             edges = []
             if node_curr.refer is not None :
@@ -169,27 +166,42 @@ class PathPlanning():
             for e1 in edges:
                 for node_next in e1.finish(node_curr):
 
-                    print(f'NODE_CURR {node_curr}')
-                    print(f'NODE_NEXT {node_next}')
+                    #print(f'NODE_CURR {node_curr}')
+                    #print(f'NODE_NEXT {node_next}')
 
                     #print(f'{node_next}')
                     gain_prev = dist_gain[ node_next ]
 
                     cost_prev, key_prev, mine_prev, path_prev = gain_prev
-                    path_text = ' => '.join(map(str,path_prev))
-                    print(f'DIST_GAIN {cost_prev} PACMAN {key_prev} {mine_prev} PATH {path_text}')
-                    print('')
+                    #path_text = ' => '.join(map(str,path_prev))
+                    #print(f'DIST_GAIN {cost_prev} PACMAN {key_prev} {mine_prev} PATH {path_text}')
+                    #print('')
 
                     #print(f'{gain_prev}')
                     cost_prev, key_prev, mine_prev, path_prev = dist_gain[ node_next ]
                     cost_next, cost_path, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_curr, node_next, e1)
 
                     if yield_goal != 'NONE' :
-                        yield_path = copy.copy(path_curr)
-                        yield_path.extend(yield_path)
-                        yield ( yield_goal , key_curr , mine_curr , yield_path )
+                        print(yield_goal)
+                        text = ' => '.join(map(str,path_curr))
+                        print(f' PATH_CURRENT {text}')
+                        text = ' => '.join(map(str,yield_path))
+                        print(f' PATH_CURRENT {text}')
+
+                        path_update = copy.copy(path_curr)
+                        path_update.extend(yield_path)
+
+                        yield ( yield_goal , key_curr , mine_curr , path_update )
 
                     if cost_next + cost_curr < cost_prev :
+
+                        print(f'MINE {mine_curr}')
+                        text = ' => '.join(map(str,path_curr))
+                        print(f' PATH_CURRENT {text}')
+                        text = ' => '.join(map(str,cost_path))
+                        print(f' PATH_COST {text}')
+                        print()
+
                         # Update cost
                         cost_update = cost_next + cost_curr
 
@@ -203,11 +215,11 @@ class PathPlanning():
                         #print(f'node_next {node_next}')
                         heapq.heappush( queue , ( cost_update , node_next ) )
                         #print(f'done')
-            print('',file=sys.stderr)
 
-        for k1, d1 in dist_gain.items():
-            cost_prev, key_prev, mine_prev, path_prev = d1
-            print(f'{k1} DIST_GAIN STARTED {cost_prev} {key_prev} {mine_prev}')
+        #for k1, d1 in dist_gain.items():
+        #    path_text = ' => '.join(map(str,path_prev))
+        #    cost_prev, key_prev, mine_prev, path_prev = d1
+        #    print(f'{k1} DIST_GAIN END {cost_prev} PACID {key_prev} MINE {mine_prev} LENGTH {len(path_prev)}')
 
         return
 
@@ -286,12 +298,24 @@ class StrategyThief:
         is_opp_pacman, is_super_pellet, is_not_guided = False, False, False
         path_opp_pacman, path_super_pellet, path_not_guided = [], [], []
 
-        work = []
-        if edge.allays[0] == node_next :    work = edge.allays[::-1]
-        else :                              work = edge.allays
-        while work[0] != node_curr :        work.pop(0)
+        print(f'mine_curr {mine_curr}')
+        print(f'node_curr {node_curr}')
+        print(f'node_next {node_next}')
+        print(f'edge {edge}')
+
+        work = copy.copy(edge.allays)
+        print(f'check 0 : {edge.allays[0]} node_next {node_next}')
+
+        if edge.allays[0].coord == node_next.coord :
+            print("REVERSE") ; work = work[::-1]
+        while work[0].coord != node_curr.coord :        work.pop(0)
 
         work.pop(0)                         # Skip current
+
+        text = ' => '.join(map(str,work))
+        print(text)
+        print()
+
         for c1 in work :
             len, gain = len + 1, gain + min(c1.pellet,1)
             path.append(c1)
@@ -304,6 +328,7 @@ class StrategyThief:
                 is_not_guided = True
 
             if is_super_pellet != True and c1.pellet == 10 :
+                #print(f'**** {c1} ****')
                 is_super_pellet = True
                 path_super_pellet = copy.copy(path)
 
@@ -316,6 +341,14 @@ class StrategyThief:
         if is_opp_pacman == True : goal, path2 = 'OPP_PACMAN' , path_opp_pacman
         elif is_super_pellet == True : goal, path2 = 'SUPER_PELLET' , path_super_pellet
         elif is_not_guided == True : goal, path2 = 'NOT_GUIDED' , path_not_guided
+
+        # DEBUG
+        #if is_super_pellet == True :
+        #    text = ' => '.join(map(str,path))
+        #    print(f'PATH_ {text}')
+        #    text = ' => '.join(map(str,path2))
+        #    print(f'PATH2 {text}')
+
 
         return gain, path, goal, path2
 
@@ -569,8 +602,10 @@ class BoardNodesAndEdges():
         print("HERE")
         a = ', '
         for yield_goal , key_curr , mine_curr , yield_path in  self.pather.solve2(self):
-            pass
-            #print(f' {yield_goal} ID {key_curr} {mine_curr} {a.join(yield_path)}')
+
+            print("YIELD")
+            text = ' => '.join(map(str,yield_path))
+            print(f' {yield_goal} ID {key_curr} MINE {mine_curr} PATH {text}')
 
 
     def find_next2_move(self,mine):

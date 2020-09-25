@@ -62,8 +62,22 @@ def read_order(text):
             return
 
 def t_check_map(PACMAN_MAP):
+
+    print('   ',file=sys.stderr,end='')
+    for i in range(WIDTH):
+        print(f'{i // 10}' if i >= 10 else ' ',file=sys.stderr,end='')
+    print('',file=sys.stderr)
+
+    print('   ',file=sys.stderr,end='')
+    for i in range(WIDTH):
+        print(f'{i % 10}',file=sys.stderr,end='')
+    print('',file=sys.stderr)
+
+    print('',file=sys.stderr)
+
     for i in range(HEIGHT):
-        print("".join(PACMAN_MAP[i]),file=sys.stderr)
+        text = "".join(PACMAN_MAP[i])
+        print(f'{i:2d} {text}',file=sys.stderr)
 
 class _predicting(unittest.TestCase):
 
@@ -97,6 +111,9 @@ class _predicting(unittest.TestCase):
         kanban_node.pather = pather
 
         print("TEST")
+
+        #for e1 in kanban_node.edges:
+        #    print(e1)
 
         kanban_node = next(iter(kanban_node))
         out = ''
