@@ -123,7 +123,7 @@ class PathPlanning():
         dist_gain = {}
 
         for _, n1 in kanban_node.nodes.items():
-            dist_gain[n1] = (float('Inf'),(0,0,None,[]) )
+            dist_gain[n1] = (float('Inf') , 0 , None , [] )
 
         for k1, m1 in kanban_node.mine.items():
             print(k1)
@@ -141,12 +141,24 @@ class PathPlanning():
                                                                                 #   Pacman
                                                                                 #   Path
 
+        i1 = 0
+        for k1, d1 in dist_gain.items():
+            cost_prev, key_prev, mine_prev, path_prev = d1
+            print(f' ({k1}) ',end='')
+            i1 = (i1 + 1) % 6
+            if i1 == 0:
+                print()
+
         # TODO:
         state = StrategyThief(None)
 
         while len(queue):
             ( cost_curr , node_curr ) = heapq.heappop(queue)
             _, key_curr, mine_curr, path_curr = dist_gain[ node_curr ]
+
+            #a = ', '
+            path_text = ' => '.join(map(str,path_curr))
+            print(f'COST_CURR {cost_curr} PACMAN {key_curr} {mine_curr} PATH {path_text}')
 
             edges = []
             if node_curr.refer is not None :
@@ -155,13 +167,22 @@ class PathPlanning():
                 edges =  node_curr.edges
 
             for e1 in edges:
-                for node_next in e1.finish(node_current):
+                for node_next in e1.finish(node_curr):
 
+                    print(f'NODE_CURR {node_curr}')
+                    print(f'NODE_NEXT {node_next}')
+
+                    #print(f'{node_next}')
+                    gain_prev = dist_gain[ node_next ]
+
+                    cost_prev, key_prev, mine_prev, path_prev = gain_prev
+                    path_text = ' => '.join(map(str,path_prev))
+                    print(f'DIST_GAIN {cost_prev} PACMAN {key_prev} {mine_prev} PATH {path_text}')
+                    print('')
+
+                    #print(f'{gain_prev}')
                     cost_prev, key_prev, mine_prev, path_prev = dist_gain[ node_next ]
-                    cost_next, cost_path, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_current, node_next, e1)
-
-                    for p1 in cost_path:
-                        print(f'{p1}',file=sys.stderr,end='')
+                    cost_next, cost_path, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_curr, node_next, e1)
 
                     if yield_goal != 'NONE' :
                         yield_path = copy.copy(path_curr)
@@ -182,6 +203,11 @@ class PathPlanning():
                         #print(f'node_next {node_next}')
                         heapq.heappush( queue , ( cost_update , node_next ) )
                         #print(f'done')
+            print('',file=sys.stderr)
+
+        for k1, d1 in dist_gain.items():
+            cost_prev, key_prev, mine_prev, path_prev = d1
+            print(f'{k1} DIST_GAIN STARTED {cost_prev} {key_prev} {mine_prev}')
 
         return
 
@@ -267,7 +293,7 @@ class StrategyThief:
 
         work.pop(0)                         # Skip current
         for c1 in work :
-            len, gain = len + 1, gain + MIN(c1.pellet,1)
+            len, gain = len + 1, gain + min(c1.pellet,1)
             path.append(c1)
             if is_opp_pacman != True and c1.pacman < 0 :
                 len = Float('Inf')
@@ -328,7 +354,7 @@ class Case():
 
     def __str__(self):
         y1, x1 = self.coord
-        return f'x {x1} y {y1}'
+        return f'x {x1:2d} y {y1:2d}'
 
     def __eq__(self,other):
         return self.id - other.id
@@ -541,8 +567,11 @@ class BoardNodesAndEdges():
 
     def find_next3_move(self):
         print("HERE")
+        a = ', '
         for yield_goal , key_curr , mine_curr , yield_path in  self.pather.solve2(self):
-            print(yield_goal)
+            pass
+            #print(f' {yield_goal} ID {key_curr} {mine_curr} {a.join(yield_path)}')
+
 
     def find_next2_move(self,mine):
         pacmine_y, pacmine_x = pacmine_coord = mine.coord
@@ -619,9 +648,9 @@ class Pacman():
         if self is None :
             return 'Pacman None...'
         if self.mine == MINE :
-            return f'({+self.id-1,self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
+            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d})'
         else :
-            return f'({-self.id+1,self.mine}) (x:{self.x},y:{self.y},t:{self.type})'
+            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d})'
 
 
     def update(self,state):
