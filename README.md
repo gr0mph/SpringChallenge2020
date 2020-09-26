@@ -4,13 +4,13 @@
 
 ***Coding Game Spring Challenge 2020***
 
-![](picture/league_wood.png)
+![](picture/league_wood.png) ![](picture/league_bronze.png)
 
 **No idea**
 
 **Do a getter for pacman state**
 
-- [ ] @property
+- [x] @property
 
 **Create node and create edge**
 
@@ -21,6 +21,13 @@
 
 - [x] Coding and testing
 - [x] Add multiple pacman
+
+**Add algorithm path planning**
+
+- [x] Done
+- [x] With multi-agent behavior
+
+![](picture/range_wood.png) ![](picture/range_bronze.png)
 
 | Title   | URL                          |
 |:--------|:-----------------------------|

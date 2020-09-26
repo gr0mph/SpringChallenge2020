@@ -119,6 +119,8 @@ class PathPlanning():
             dist_gain[n1] = (float('Inf') , 0 , None , [] )
 
         for k1, m1 in kanban_node.mine.items():
+            print(f'SOLVE2 ID {k1} MINE {m1}',file=sys.stderr)
+
             if m1.coord in kanban_node.nodes:
                 heapq.heappush( queue , ( 0 , kanban_node.nodes[m1.coord] ) )
                 dist_gain[ kanban_node.nodes[ m1.coord ] ] = (0,k1,m1,[])       #   Gain
@@ -148,9 +150,13 @@ class PathPlanning():
             for e1 in edges:
                 for node_next in e1.finish(node_curr):
 
+                    if node_next not in dist_gain :
+                        dist_gain[node_next] = (float('Inf') , 0 , None , [] )
+
                     gain_prev = dist_gain[ node_next ]
 
                     cost_prev, key_prev, mine_prev, path_prev = dist_gain[ node_next ]
+
                     cost_next, cost_path, yield_goal, yield_path = state.heuristic2(kanban_node, mine_curr, node_curr, node_next, e1)
 
                     if yield_goal != 'NONE' :
@@ -180,6 +186,7 @@ class PathPlanning():
         current_node = self.first
         way = 1
         pacman = Pacman(kanban_node.mine[pacman_id])
+        pacman.kanban = kanban_node
         pacman.path = []
 
         print(f'REDUCE {pacman_id}',file=sys.stderr)
@@ -253,7 +260,13 @@ class StrategyThief:
         path_opp_pacman, path_super_pellet, path_not_guided = [], [], []
 
         work = copy.copy(edge.allays)
-        if edge.allays[0].coord == edge.allays[-1].coord :  no_way_out = True
+        if edge.allays[0].coord == edge.allays[-1].coord :
+            if node_next.coord == edge.allays[0].coord :
+                work.pop()
+                work = work[::-1]
+            else :
+                work.pop()
+            no_way_out = True
         elif edge.allays[0].coord == node_next.coord :      work = work[::-1]
         while work[0].coord != node_curr.coord :            work.pop(0)
 
@@ -263,9 +276,14 @@ class StrategyThief:
             len, gain = len + 1, gain + min(c1.pellet,1)
             path.append(c1)
             if is_opp_pacman != True and c1.pacman < 0 :
-                len = Float('Inf')
+                len = float('Inf')
                 is_opp_pacman = True
                 path_opp_pacman = copy.copy(path)
+                break
+
+            if c1.pacman > 0 :
+                len = float('Inf')
+                break
 
             #if is_not_guided != True and c1.guided == False :
             #    is_not_guided = True
@@ -274,15 +292,18 @@ class StrategyThief:
                 is_not_guided = True
 
             if is_super_pellet != True and c1.pellet == 10 :
+                print(f'MINE {mine_curr} SUPER PELLET {c1}',file=sys.stderr)
                 is_super_pellet = True
                 path_super_pellet = copy.copy(path)
 
-        if is_not_guided == True:
+        if len == float('Inf') :
+            is_not_guided = False
+
+        if is_not_guided == True :
             path_not_guided = copy.copy(path)
-            #path_not_guided.pop(-1)
-        elif no_way_out == True :
-            path = []
-            path.append(edge.allays[0])
+        #elif no_way_out == True :
+        #    path = []
+        #    path.append(edge.allays[0])
 
         gain = len - gain
         goal, path2 = 'NONE', []
@@ -368,6 +389,9 @@ class Edge():
             yield self.allays[-1]
         elif node.coord == self.allays[-1].coord :
             yield self.allays[0]
+        elif self.allays[0].coord == self.allays[-1].coord :
+            yield self.allays[0]
+            yield self.allays[-2]
         else:
             yield self.allays[0]
             yield self.allays[-1]
@@ -403,7 +427,7 @@ class BoardAgent():
             if coord1 not in pellet:
                 y1, x1 = coord1
                 if c1.pellet != 0 :
-                    print(f'delete pellet {x1} {y1}',file=sys.stderr)
+                    print(f'MINE {self.mine} delete pellet {x1} {y1}',file=sys.stderr)
                     c1.pellet = 0
 
     def __str__(self):
@@ -534,15 +558,22 @@ class BoardNodesAndEdges():
             self.edges.append(edge)
             return
 
+    def set_pop_edges(self,board):
+        for e1 in self.edges:
+            if e1.allays[0].coord == e1.allays[-1].coord:
+                e1.allays.pop()
+
     def set_up(self,board):
         self.set_cases(board)
         self.set_nodes_and_edges(board)
+        self.set_pop_edges(board)
 
     def __iter__(self):
         return self
 
     def find_next3_move(self):
         pacman_result = {}
+        not_guided_result = {}
 
         for yield_goal , key_curr , mine_curr , yield_path in  self.pather.solve2(self):
             tuple_result = (key_curr,TYPE_GOAL[yield_goal])
@@ -551,11 +582,34 @@ class BoardNodesAndEdges():
                     pacman_result[tuple_result] = yield_path
 
             elif yield_goal == 'NOT_GUIDED' and tuple_result in pacman_result:
-                if len(yield_path) < len(pacman_result[tuple_result]):
+                if len(yield_path) < len(pacman_result[tuple_result]) :
+
+                    do_not = False
+                    for k1, c1 in not_guided_result.items():
+                        if c1.coord == yield_path[0].coord:
+                            print(f'TROUVE {c1}',file=sys.stderr)
+                            do_not = True
+
+                    if do_not == False:
+                        pacman_result[tuple_result] = yield_path
+                        not_guided_result[key_curr] = yield_path[0]
+
+            elif yield_goal == 'NOT_GUIDED' :
+                do_not = False
+                for k1, c1 in not_guided_result.items():
+                    if c1.coord == yield_path[0].coord:
+                        print(f'TROUVE {c1}',file=sys.stderr)
+                        do_not = True
+
+                if do_not == False:
                     pacman_result[tuple_result] = yield_path
+                    not_guided_result[key_curr] = yield_path[0]
 
             else :
                 pacman_result[tuple_result] = yield_path
+
+        for k1, c1 in not_guided_result.items():
+            print(f'{k1} FIRST COORD {c1}',file=sys.stderr)
 
         for k1, p1 in pacman_result.items():
             text = ' => '.join(map(str,p1))
@@ -615,7 +669,9 @@ class BoardNodesAndEdges():
 
         kanban_predicted = BoardNodesAndEdges(self)
         for k1, m1 in kanban_predicted.mine.items():
+            print(f'ID {k1} MINE {m1}',file=sys.stderr)
             mine_next = Pacman(m1)
+            mine_next.kanban = kanban_predicted
             kanban_predicted.mine[k1] = mine_next
             if mine_next.path is None or len(mine_next.path) == 0 :
                 need_find_next3_move = True
@@ -641,30 +697,90 @@ class Pacman():
         self.out = ''
         self.state = None
         self.x, self.y, self.type = 0,0,0
+        self.ability, self.speed = 0, 0
         self.path = None
+        self.kanban = None
 
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
             self.x, self.y, self.type = clone.x, clone.y, clone.type
+            self.ability, self.speed = clone.ability, clone.speed
             self.path = copy.copy(clone.path)
+            self.kanban = clone.kanban
 
     def __str__(self):
         if self is None :
             return 'Pacman None...'
         if self.mine == MINE :
-            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d})'
+            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},t:{self.speed:2d})'
         else :
-            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d})'
+            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},t:{self.speed:2d})'
 
 
     def update(self,state):
         state = [int(i) for i in state]
         state.append(1)
+
+        path2_coord = -1 , -1
+        path1_coord = -1 , -1
+        if self.path is not None and len(self.path) > 1 :
+            path2_coord = self.path[1].coord
+            print(path2_coord,file=sys.stderr)
+
+        elif self.path is not None and len(self.path) > 0 :
+            path1_coord = self.path[0].coord
+
+        y2, x2 = path2_coord
+        y1, x1 = path1_coord
+
         if self.mine == MINE and self.x == state[0] and self.y == state[1]:
-            if self.path is not None and len(self.path) > 0 :
-                self.path.pop(0)
+            print('BAD NEWS',file=sys.stderr)
+
+            #if self.path is not None and len(self.path) > 0 :
+            #    self.path.pop(0)
+        elif self.mine == MINE and self.y == y2 and self.x == x2  :
+            first1_coord = self.path[0]
+            if first1_coord in self.kanban.nodes :
+                self.kanban.nodes[ first1_coord ].pellet = 0
+            elif first1_coord in self.kanban.cases :
+                self.kanban.cases[ first1_coord ].pellet = 0
+            first1_coord = self.path[1]
+            if first1_coord in self.kanban.nodes :
+                self.kanban.nodes[ first1_coord ].pellet = 0
+            elif first1_coord in self.kanban.cases :
+                self.kanban.cases[ first1_coord ].pellet = 0
+            self.path.pop(0)
+            self.path.pop(0)
+        elif self.mine == MINE and self.y == y1 and self.x == x1 :
+            first1_coord = self.path[0]
+            if first1_coord in self.kanban.nodes :
+                self.kanban.nodes[ first1_coord ].pellet = 0
+            elif first1_coord in self.kanban.cases :
+                self.kanban.cases[ first1_coord ].pellet = 0
+            self.path.pop(0)
+
+        if self.coord in self.kanban.nodes :
+            self.kanban.nodes[ self.coord ].pacman = 0
+            y1, x1 = self.coord
+            print(f'CLEAR {x1:2d} {y1:2d} PACMAN {self.kanban.nodes[ self.coord ].pacman}',file=sys.stderr)
+        elif self.coord in self.kanban.cases :
+            self.kanban.cases[ self.coord ].pacman = 0
+            y1, x1 = self.coord
+            print(f'CLEAR {x1:2d} {y1:2d} PACMAN {self.kanban.cases[ self.coord ].pacman}',file=sys.stderr)
 
         self.x, self.y, self.type = state[0], state[1], state[2]
+        self.ability, self.speed = state[4], state[3]
+
+        if self.coord in self.kanban.nodes :
+            self.kanban.nodes[ self.coord ].pellet = 0
+            self.kanban.nodes[ self.coord ].pacman = self.id
+            y1, x1 = self.coord
+            print(f'SET {x1:2d} {y1:2d} PACMAN {self.kanban.nodes[ self.coord ].pacman}',file=sys.stderr)
+        elif self.coord in self.kanban.cases :
+            self.kanban.cases[ self.coord ].pellet = 0
+            self.kanban.cases[ self.coord ].pacman = self.id
+            y1, x1 = self.coord
+            print(f'SET {x1:2d} {y1:2d} PACMAN {self.kanban.cases[ self.coord ].pacman}',file=sys.stderr)
 
     #def correction(self,next,prev):
     #    if self.coord == next.coord :
@@ -672,16 +788,28 @@ class Pacman():
     #    elif self.coord == prev.coord :
     #        self.way = 1 if self.way == -1 else -1
 
+    def write_speed(self,in_text):
+        print(f'WRITE_SPEED {self}',file=sys.stderr)
+        t = f'SPEED {self.id-1}'
+        t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+        return t
+
     def write_move(self,in_text):
         #print(f'ID {self.id}',file=sys.stderr)
         #for c1 in self.path:
         #    print(f'({c1}) -> ', end='', file=sys.stderr)
         #print('',file=sys.stderr)
 
-        if self.path is not None and len(self.path) > 0 :
+        print(f'WRITE_MOVE {self}',file=sys.stderr)
+        if self.speed > 0 and self.path is not None and len(self.path) > 1 :
+            c1 =  self.path[1]
+            y1 , x1 = c1.coord
+            t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
+
+        elif self.path is not None and len(self.path) > 0 :
             c1 =  self.path[0]
-            self.y , self.x = c1.coord
-            t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
+            y1 , x1 = c1.coord
+            t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
         else :
             t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
 
@@ -767,6 +895,8 @@ if __name__ == '__main__':
 
 
             if pacman_id in pacman_board :
+                t1 = ' , '.join(map(str,state_in))
+                print(f'STATE IN {t1}',file=sys.stderr)
                 pacman_board[pacman_id].update(state_in[2:])
                 # Technical Debt
                 #for predict_p1 in next_pacmans:
@@ -779,12 +909,16 @@ if __name__ == '__main__':
                 if pacman_board[pacman_id].mine == MINE :
                     pacman_agent = board_agent[pacman_id]
                     pacman_agent = BoardAgent(pacman_agent)
+                    pacman_agent.mine = pacman_board[pacman_id]
                     board_agent[pacman_id] = pacman_agent
 
             else :
                 pacman_new = Pacman(None)
+                pacman_new.kanban = kanban_node
                 pacman_new.id, pacman_new.mine = pacman_id, mine
                 pacman_board[pacman_id] = pacman_new
+                t1 = ' , '.join(map(str,state_in))
+                print(f'NEW STATE IN {t1}',file=sys.stderr)
                 pacman_board[pacman_id].update(state_in[2:])
 
                 if pacman_new.mine == MINE :
@@ -798,8 +932,14 @@ if __name__ == '__main__':
         for i1 in range(1,mine_pac_count+1):
             if -i1 not in pacman_board:
                 pacman_opp = Pacman(pacman_board[i1])
+                pacman_opp.kanban = kanban_node
                 pacman_opp.mine = OPP
                 pacman_opp.x = WIDTH - 1 - pacman_opp.x
+                pacman_opp.id = -i1
+                pacman_board[-i1] = pacman_opp
+                state_in = [pacman_opp.x , pacman_opp.y , pacman_opp.type, pacman_opp.ability , pacman_opp.speed ]
+                pacman_board[-i1].update(state_in)
+
         # --> Add correction <--
 
         # 3
@@ -822,6 +962,9 @@ if __name__ == '__main__':
         #for c1, p1 in pellet_board.items():
         #    y1, x1 = c1
         #    print(f'({x1} , {y1}) pellet {p1}',file=sys.stderr)
+
+
+
 
         # --> Add correction <--
         for k1, a1 in board_agent.items():
@@ -849,7 +992,10 @@ if __name__ == '__main__':
 
         out = ''
         for _, p1 in kanban_node.mine.items():
-            out = p1.write_move(out)
+            if p1.ability == 0 :
+                out = p1.write_speed(out)
+            else :
+                out = p1.write_move(out)
         print(out)
 
         # UPDATE NEW DATA
