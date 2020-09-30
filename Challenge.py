@@ -36,80 +36,6 @@ class PathPlanning():
     def __str__(self):
         return 'PathPlanning'
 
-    def solve(self,kanban_node,pacman_id):
-        mine = kanban_node.mine[pacman_id]
-        start_node = kanban_node.nodes[ mine.coord ]
-        queue = [ ( 0 , start_node ) ]
-
-        # ADD
-        self.first = start_node
-
-        # TODO:
-        state = StrategyThief(None)
-
-        distgain = {}
-        gaingain = {}
-        for _, n1 in kanban_node.nodes.items():
-            distgain[n1] = (float('Inf'),[])
-
-        distgain[start_node] = (0,[])
-
-        while len(queue):
-            ( cost_curr , node_current ) = heapq.heappop(queue)
-            _, path_curr = distgain[node_current]
-
-            for e1 in node_current.edges:
-
-                node_next = e1.finish(node_current)
-                cost_prev, path_prev = distgain[node_next]
-                cost_next = state.heuristic(kanban_node,mine,e1)
-
-                if cost_next <= 0 :
-
-                    if 1 + cost_curr < cost_prev :
-                        # Update distgain
-                        cost_update = 1 + cost_curr
-                        gain_update = cost_next + cost_curr
-                        # Update path
-                        path_update = copy.copy(path_curr)
-                        path_update.append(e1)
-
-                        distgain[node_next] = (cost_update,path_update)
-                        gaingain[node_next] = (gain_update,path_update)
-                        heapq.heappush( queue , ( cost_update , node_next ) )
-                        self.last , self.gain, self.path = node_next, gain_update, path_update
-                        return (node_next,gain_update,path_update)
-
-                else :
-                    if cost_next + cost_curr < cost_prev :
-                        # Update distgain
-                        cost_update = cost_next + cost_curr
-                        # Update path
-                        path_update = copy.copy(path_curr)
-                        path_update.append(e1)
-
-                        distgain[node_next] = (cost_update,path_update)
-                        heapq.heappush( queue , ( cost_update , node_next ) )
-
-        del distgain[start_node]
-        gain = -float('Inf')
-        edge_path = []
-
-        # Pas cool
-        #for n1, t1 in gaingain.items():
-        #    g1, p1 = t1
-        #    if g1 > gain : gain, edge_path = g1, t1
-
-        node_next, gain_next, path_next = None, 0, []
-        for n1, t1 in distgain.items():
-            g1, p1 = t1
-            if g1 > gain_next :
-                node_next = n1
-                gain_next = g1
-                path_next = t1
-
-        return (node_next, gain_next, path_next)
-
     def solve2(self,kanban_node):
         # Create Queue
         queue = []
@@ -182,34 +108,6 @@ class PathPlanning():
 
         return
 
-    def reduce(self,kanban_node,pacman_id):
-        current_node = self.first
-        way = 1
-        pacman = Pacman(kanban_node.mine[pacman_id])
-        pacman.kanban = kanban_node
-        pacman.path = []
-
-        print(f'REDUCE {pacman_id}',file=sys.stderr)
-        for e1 in self.path :
-            way = []
-            if current_node.coord == e1.allays[0].coord :
-                way = copy.copy(e1.allays)
-            else :
-                way = copy.copy(e1.allays)[::-1]
-
-            if current_node.coord == way[-1].coord :
-                way.pop(-1)
-                for c1 in way[1::1]:    pacman.path.append(c1)
-                way = way[::-1]
-                for c1 in way[0::1]:    pacman.path.append(c1)
-            else :
-                for c1 in way[1::1]:    pacman.path.append(c1)
-
-            current_node = pacman.path[-1]
-
-        return pacman
-
-
 class StrategyThief:
 
     def __init__(self,clone):
@@ -217,26 +115,6 @@ class StrategyThief:
 
     def __str__(self):
         return 'StrategyThief'
-
-    def heuristic(self,kanban_node,mine,edge):
-        gain = 0
-        for _, opp1 in kanban_node.opp.items() :
-            coord_opp = opp1.coord
-            cases_opp = [e1 for e1 in edge.allays if e1.coord == coord_opp ]
-            if len(cases_opp) != 0 :
-                return float('Inf')
-
-        for _, mine1 in kanban_node.mine.items() :
-            if mine1.coord == mine.coord:   continue
-            coord_mine = mine1.coord
-            cases_mine = [e1 for e1 in edge.allays if e1.coord == coord_mine ]
-            if len(cases_mine) != 0 :
-                return float('Inf')
-
-        for e1 in edge.allays[1:]:
-            gain = gain + e1.pellet
-        gain = len(edge.allays) - gain
-        return gain
 
     def heuristic2(self,kanban_node,mine_curr, node_curr, node_next, edge):
         #   Return tuple
@@ -304,10 +182,6 @@ class StrategyThief:
             #path_not_guided = path[:2]
             path_not_guided = path[:3]
 
-        #elif no_way_out == True :
-        #    path = []
-        #    path.append(edge.allays[0])
-
         gain = len - gain
         goal, path2 = 'NONE', []
         if is_opp_pacman == True : goal, path2 = 'OPP_PACMAN' , path_opp_pacman
@@ -337,7 +211,8 @@ class Case():
         self.id = -1
         self.coord = -1, -1     #   row or y,   col or x
         self.refer = None
-        self.pellet, self.guided, self.pacman = 0, False, 0 #   Value,  Bool,   ID (positive: mine)
+        self.pellet, self.guided, self.pacman = 0, False, 0
+        #   Value,  Bool,   ID (positive: mine)
         self.way = []
         self.guided = 0
         if clone is not None:
@@ -631,41 +506,6 @@ class BoardNodesAndEdges():
             elif desired_opp_pacman in pacman_result:
                 m1.path = pacman_result[desired_opp_pacman]
 
-
-    def find_next2_move(self,mine):
-        pacmine_y, pacmine_x = pacmine_coord = mine.coord
-        if pacmine_coord in self.cases :
-
-            # TODO: Can be performed
-            if mine.path is None :
-                edge = self.cases[pacmine_coord].refer
-                mine.path = copy.copy(edge.allays)
-                if mine.path[0].coord == mine.path[-1].coord :
-                    # TODO:
-                    mine.path.pop(-1)
-                    while True:
-                        if mine.path[-1].coord != pacmine_coord :
-                            mine.path.pop(-1)
-                        else :
-                            mine.path.pop(-1)
-                            break
-                    mine.path = mine.path[::-1] # Reverse
-
-                else :
-                    while True:
-                        if mine.path[0].coord != pacmine_coord :
-                            mine.path.pop(0)
-                        else :
-                            mine.path.pop(0)
-                            break
-
-        elif pacmine_coord in self.nodes :
-
-            pacman_id = mine.id
-            n1, g1 , p1 = self.pather.solve(self,pacman_id)
-            pacman_mine = self.pather.reduce(self,pacman_id)
-            self.mine[pacman_id] = pacman_mine
-
     def __next__(self):
 
         need_find_next3_move = False
@@ -676,21 +516,9 @@ class BoardNodesAndEdges():
             mine_next = Pacman(m1)
             mine_next.kanban = kanban_predicted
             kanban_predicted.mine[k1] = mine_next
-            if mine_next.path is None or len(mine_next.path) == 0 :
-                need_find_next3_move = True
-
-        #if need_find_next3_move == True :
-        #    kanban_predicted.find_next3_move()
 
         kanban_predicted.find_next3_move()
 
-
-        #kanban_predicted = BoardNodesAndEdges(self)
-
-        #for key, mine in kanban_predicted.mine.items():
-        #    mine_predicted = Pacman(mine)
-        #    kanban_predicted.mine[key] = mine_predicted
-        #    kanban_predicted.find_next2_move( mine_predicted )
         return kanban_predicted
 
 class Pacman():
@@ -891,9 +719,9 @@ if __name__ == '__main__':
             if state_in[4] == 4 :
                 #   DEAD
                 del pacman_board[pacman_id]
-                if mine == OPP :
+                if mine == OPP and -pacman_id in kanban_node.opp :
                     del kanban_node.opp[-pacman_id]
-                else :
+                elif pacman_id in kanban_node.mine :
                     del kanban_node.mine[pacman_id]
 
 
@@ -965,9 +793,6 @@ if __name__ == '__main__':
         #for c1, p1 in pellet_board.items():
         #    y1, x1 = c1
         #    print(f'({x1} , {y1}) pellet {p1}',file=sys.stderr)
-
-
-
 
         # --> Add correction <--
         for k1, a1 in board_agent.items():

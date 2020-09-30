@@ -27,6 +27,20 @@
 - [x] Done
 - [x] With multi-agent behavior
 
+**Simplify Code**
+
+- [ ] Simplify Pacman update method
+
+**Boarding and Simulate**
+
+- [ ] 2D array dimension
+- [ ] Simple property (pellet, pacman id)
+- [ ] Implement rules
+
+**Predict pacman opp moving**
+
+- [ ] When pacman opp is know, try to predict his next movement
+
 ![](picture/range_wood.png) ![](picture/range_bronze.png)
 
 | Title   | URL                          |
