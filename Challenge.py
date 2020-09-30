@@ -273,7 +273,7 @@ class StrategyThief:
         work.pop(0)                         # Skip current
         for c1 in work :
             #len, gain = len + 1, gain + min(c1.pellet,1)
-            len, gain = len + 1, gain + min(c1.pellet,1)
+            len, gain = len + 1, gain
             path.append(c1)
             if is_opp_pacman != True and c1.pacman < 0 :
                 len = float('Inf')
@@ -300,7 +300,10 @@ class StrategyThief:
             is_not_guided = False
 
         if is_not_guided == True :
-            path_not_guided = copy.copy(path)
+            #path_not_guided = copy.copy(path)
+            #path_not_guided = path[:2]
+            path_not_guided = path[:3]
+
         #elif no_way_out == True :
         #    path = []
         #    path.append(edge.allays[0])
