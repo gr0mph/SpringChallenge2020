@@ -206,6 +206,9 @@ class StrategyPriest:
     def __str__(self):
         pass
 
+# Kanban Simulate in development
+# Check simulating folder
+
 class Case():
     def __init__(self,clone):
         self.id = -1
