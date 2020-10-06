@@ -116,3 +116,12 @@ class KanbanSimulate():
             self.resolve_move(step_speed)
 
     def simulate_dead(self):
+        for k1, p1 in self.pacman.items():
+            if len(p1.id) > 1 :
+                # Kill a pacman
+    
+    def simulate_pellet(self):
+        for k1, p1 in self.pacman.items():
+            if len(p1.id) > 0 and p1.pellet > 0 :
+                # Eat pellet
+                
