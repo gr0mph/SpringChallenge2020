@@ -116,12 +116,26 @@ class KanbanSimulate():
             self.resolve_move(step_speed)
 
     def simulate_dead(self):
-        for k1, p1 in self.pacman.items():
-            if len(p1.id) > 1 :
+        for k1, p1_s in self.pacman.items():
+            if len(p1_s) > 1 :
                 # Kill a pacman
-    
+                p1, p2 = p1_s[0], p1_s[1]
+                if p1.type == 1 and p2.type == 3 :      p2.type = 4 # P2 died
+                elif p1.type == 1 and p2.type == 2 :    p1.type = 4 # P1 died
+                elif p1.type == 2 and p2.type == 1 :    p2.type = 4 # P2 died
+                elif p1.type == 2 and p2.type == 3 :    p1.type = 4 # P1 died
+                elif p1.type == 3 and p2.type == 2 :    p2.type = 4 # P2 died
+                elif p1.type == 3 and p2.type == 1 :    p1.type = 4 # P1 died
+
+
     def simulate_pellet(self):
-        for k1, p1 in self.pacman.items():
-            if len(p1.id) > 0 and p1.pellet > 0 :
-                # Eat pellet
-                
+        for k1, p1_s in self.pacman.items():
+            for p1 in p1_s:
+                if p1.type != 4 :
+                    p1_owned = MINE if p1.id > 0 else OPP
+
+                    pellet = self.case[k1].pellet
+                    self.case[k1].pellet = 0
+                    self.case[k1].pacman = p1
+
+                    self.scoring[p1_owned] = self.scoring[p1_owned] + pellet
