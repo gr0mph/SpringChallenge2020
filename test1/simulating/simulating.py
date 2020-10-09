@@ -37,7 +37,7 @@ class PointSimulate():
         else:
             return f'P:{self.pellet} PAC:{self.pacman.id},{self.pacman.type},{self.pacman.ability},{self.pacman.speed}'
 
-def update_order(text):
+def update_order(player,text):
     text, t1 = text.split('|'), ''
     skill = []
     move = []
@@ -46,6 +46,7 @@ def update_order(text):
             c1, f1 = next( (c1,f1) for c1,f1 in SKILL_COMMAND if t1.find(c1) != -1 )
             t_list = t1.split(' ')
             _,d1 = t_list[0], t_list[1:]
+            d1[0] = d1[0] + 1 if player == MINE else -(d1[0] + 1)
             skill.append( (c1, f1, d1 ) )
         except:
             pass
@@ -54,6 +55,7 @@ def update_order(text):
             c1, f1 = next( (c1,f1) for c1,f1 in MOVE_COMMAND if t1.find(c1) != -1 )
             t_list = t1.split(' ')
             _,d1 = t_list[0], t_list[1:]
+            d1[0] = d1[0] + 1 if player == MINE else -(d1[0] + 1)
             move.append( (c1, f1, d1 ) )
         except:
             pass
@@ -80,6 +82,42 @@ class KanbanSimulate():
     def __str__(self):
         return 'Complex KanbanSimulate'
 
+    def switch(self,data):
+        p1 = next(iter([p1 for k1, p1 in self.pacman.items() if p1.id == data[0]]))
+        if p1.ability > 0 : return
+        if p1.type == TYPE_SET['DEAD'] : return
+        p1.type = data[1]
+
+    def speed(self, data):
+        p1 = next(iter([p1 for k1,p1 in self.pacman.items() if p1.id == data[0]]))
+        if p1.ability > 0 : return
+        if p1.type == TYPE_SET['DEAD'] : return
+        p1.speed = 6
+
+    def move(self, data):
+        p1 = next(iter([p1 for k1,p1 in self.pacman.items() if p1.id == data[0]]))
+        if p1.speed > 0 :
+            x1, y1 = data[1], data[2]
+            coord1 = y1, x1
+            if coord1 not in self.case : return
+
+            for d1, dy , dx in DIRS:
+                next_y, next_x = dy + p1.y , dx + p1.x
+                next_coord = next_y , next_x
+                if next_coord in self.case :
+                    t1 = (0, p1.id , next_x , next_y )
+                    self.move.append(t1)
+                    t1 = (1, p1.id, x1 , y1 )
+                    self.move.append(t1)
+                    break
+
+        else :
+            x1, y1 = data[1], data[2]
+            coord1 = y1, x1
+            if coord1 in self.case:
+                t1 = (0, p1.id, x1, y1)
+                self.move.append(t1)
+        return
 
     def simulate(self):
         # 1 DECREMETER ABILITY
