@@ -33,9 +33,12 @@
 
 **Boarding and Simulate**
 
-- [ ] 2D array dimension
-- [ ] Simple property (pellet, pacman id)
-- [ ] Implement rules
+- [x] 2D array dimension
+- [x] Simple property (pellet, pacman id)
+- [x] Implement rules
+- [ ] Factoring all good method necessary in test
+- [ ] Test simulator
+- [ ] Add in main program
 
 **Predict pacman opp moving**
 
