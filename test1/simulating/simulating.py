@@ -126,6 +126,15 @@ class KanbanSimulate():
         # 4 RESOLVE MOVEMENT
         # 5 DEAD PACMAN
         # 6 EAT PELLET
+        self.simulate_ability()
+        self.simulate_speed()
+        self.simulate_skill()
+        self.simulate_movement()
+        self.simulate_dead()
+        self.simulate_pellet()
+        self.simulate_movement()
+        self.simulate_dead()
+        self.simulate_pellet()
 
     def simulate_ability(self):
         for k1, p1 in self.pacman.items():
@@ -138,18 +147,12 @@ class KanbanSimulate():
     def simulate_skill(self):
         for c1, f1, d1 in self.skill :
             self.f1(d1)
-
-    def simulate_movement(self):
         for c1, f1, d1 in self.move :
             self.f1(d1)
 
+    def simulate_movement(self):
         collide = True:
         step_speed = 0
-        while collide is True :
-            self.resolve_move(step_speed)
-
-        collide = True:
-        step_speed = 1
         while collide is True :
             self.resolve_move(step_speed)
 
