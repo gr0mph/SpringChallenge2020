@@ -45,7 +45,7 @@ class PathPlanning():
             dist_gain[n1] = (float('Inf') , 0 , None , [] )
 
         for k1, m1 in kanban_node.mine.items():
-            print(f'SOLVE2 ID {k1} MINE {m1}',file=sys.stderr)
+            #print(f'SOLVE2 ID {k1} MINE {m1}',file=sys.stderr)
 
             if m1.coord in kanban_node.nodes:
                 heapq.heappush( queue , ( 0 , kanban_node.nodes[m1.coord] ) )
@@ -170,7 +170,7 @@ class StrategyThief:
                 is_not_guided = True
 
             if is_super_pellet != True and c1.pellet == 10 :
-                print(f'MINE {mine_curr} SUPER PELLET {c1}',file=sys.stderr)
+                #print(f'MINE {mine_curr} SUPER PELLET {c1}',file=sys.stderr)
                 is_super_pellet = True
                 path_super_pellet = copy.copy(path)
 
@@ -489,12 +489,13 @@ class BoardNodesAndEdges():
             else :
                 pacman_result[tuple_result] = yield_path
 
-        for k1, c1 in not_guided_result.items():
-            print(f'{k1} FIRST COORD {c1}',file=sys.stderr)
+        # TODO: OLD DEBUG
+        #for k1, c1 in not_guided_result.items():
+        #    print(f'{k1} FIRST COORD {c1}',file=sys.stderr)
 
-        for k1, p1 in pacman_result.items():
-            text = ' => '.join(map(str,p1))
-            print(f' {k1} PATH {text}',file=sys.stderr)
+        #for k1, p1 in pacman_result.items():
+        #    text = ' => '.join(map(str,p1))
+        #    print(f' {k1} PATH {text}',file=sys.stderr)
 
         for i1,m1 in self.mine.items():
 
@@ -515,7 +516,7 @@ class BoardNodesAndEdges():
 
         kanban_predicted = BoardNodesAndEdges(self)
         for k1, m1 in kanban_predicted.mine.items():
-            print(f'ID {k1} MINE {m1}',file=sys.stderr)
+            #print(f'ID {k1} MINE {m1}',file=sys.stderr)
             mine_next = Pacman(m1)
             mine_next.kanban = kanban_predicted
             kanban_predicted.mine[k1] = mine_next
@@ -552,6 +553,7 @@ class Pacman():
 
 
     def update(self,state):
+        # TODO: Refactoring that, correct eror !
         state = [int(i) for i in state]
         state.append(1)
 
@@ -622,6 +624,23 @@ class Pacman():
     #    elif self.coord == prev.coord :
     #        self.way = 1 if self.way == -1 else -1
 
+    def write_switch(self,in_text):
+        if self.type == TYPE_SET['ROCK']:
+            t = f'SWITCH {self.id-1} PAPER'
+            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
+            t = f'SWITCH {self.id-1} SCISSORS'
+            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
+        if self.type == TYPE_SET['PAPER']:
+            t = f'SWITCH {self.id-1} ROCK'
+            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
+            t = f'SWITCH {self.id-1} SCISSORS'
+            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
+        if self.type == TYPE_SET['SCISSORS']:
+            t = f'SWITCH {self.id-1} PAPER'
+            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
+            t = f'SWITCH {self.id-1} ROCK'
+            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
+
     def write_speed(self,in_text):
         print(f'WRITE_SPEED {self}',file=sys.stderr)
         t = f'SPEED {self.id-1}'
@@ -634,7 +653,7 @@ class Pacman():
         #    print(f'({c1}) -> ', end='', file=sys.stderr)
         #print('',file=sys.stderr)
 
-        print(f'WRITE_MOVE {self}',file=sys.stderr)
+        #print(f'WRITE_MOVE {self}',file=sys.stderr)
         if self.speed > 0 and self.path is not None and len(self.path) > 1 :
             c1 =  self.path[1]
             y1 , x1 = c1.coord
@@ -650,9 +669,34 @@ class Pacman():
         t = f' {t}' if in_text == '' else f'{in_text} | {t}'
         return t
 
+    def write_2move(self, in_text):
+        c1 =  self.path[1]
+        y1 , x1 = c1.coord
+        t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
+        t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+        return t
+
+    def write_1move(self, in_text):
+        if self.path is not None and len(self.path) > 0 :
+            c1 =  self.path[0]
+            y1 , x1 = c1.coord
+            t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
+        else :
+            t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
+        return t
+
     @property
     def coord(self):
         return (self.y, self.x)
+
+    def write_cmd(self, in_text):
+        if self.speed > 0 and self.path is not None and len(self.path) > 1 :
+            yield self.write_2move(in_text)
+        else :
+            yield self.write_1move(in_text)
+            if self.ability == 0 :
+                yield self.write_speed(in_text)
+                yield self.write_switch(in_text)
 
 def t_coord(coord):
     y, x = coord

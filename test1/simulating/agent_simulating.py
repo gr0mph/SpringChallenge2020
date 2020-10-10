@@ -10,6 +10,9 @@ from test1.real1_map import PACMAN_NUMBER
 from test1.real1_map import PELLET_LIST
 from test1.real1_map import PELLET_NUMBER
 
+from Challenge import MINE
+
+
 # Class
 from Challenge import Case
 from Challenge import Node
@@ -20,10 +23,20 @@ from Challenge import BoardAgent
 from Challenge import StrategyThief
 from Challenge import PathPlanning
 
+from test1.simulating.simulating import KanbanSimulate
+from test1.simulating.simulating import PacmanSimulate
+from test1.simulating.simulating import PointSimulate
+
 # Global
 
 # Method
 from Challenge import t_update_width_and_height
+
+from test1.simulating.simulating import update_order
+
+
+from ClassicFunction import init_pacman_from_list
+from ClassicFunction import init_pellet_from_list
 
 import unittest
 
@@ -85,40 +98,42 @@ class _predicting(unittest.TestCase):
         kanban_node = BoardNodesAndEdges(None)
         kanban_node.set_up(PACMAN_MAP)
 
-        for d1 in PACMAN_LIST:
-            pacman_new = Pacman(None)
-            pacman_new.mine, pacman_new.x, pacman_new.y = d1[1], d1[2], d1[3]
-            pacman_new.type = d1[4]
-            if pacman_new.mine == 0 :
-                pacman_new.id = -1 * (d1[0] + 1)
-                kanban_node.opp[pacman_new.id] = pacman_new
-            else :
-                pacman_new.id = 1 * (d1[0] + 1)
-                kanban_node.mine[pacman_new.id] = pacman_new
+        # INIT PACMAN
+        kanban_node = init_pacman_from_list(kanban_node, PACMAN_LIST)
 
-        for _, c1 in kanban_node.cases.items():
-            #    print(f'DEBUG CASE {c1}')
-            c1.pellet = 1
-
-        for c1 in PELLET_LIST:
-            coord = c1[1], c1[0]
-            if coord in kanban_node.nodes : kanban_node.nodes[coord].pellet = 10
-            if coord in kanban_node.cases : kanban_node.cases[coord].pellet = 10
+        # INIT PELLET
+        kanban_node = init_pellet_from_list(kanban_node, PELLET_LIST)
 
         pather = PathPlanning(None)
         kanban_node.pather = pather
 
-        print("TEST")
+        print()
+        kanban_simu = KanbanSimulate(None)
+        for k1, p1 in kanban_node.mine.items():
+            print(f'KEY {k1} PACMAN MINE {p1}')
+            p1_simu = PacmanSimulate(None)
+            p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            kanban_simu.pacman[(p1.y,p1.x)] = p1_simu
+        for k1, p1 in kanban_node.opp.items():
+            print(f'KEY {k1} PACMAN MINE {p1}')
+            p1_simu = PacmanSimulate(None)
+            p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            kanban_simu.pacman[(p1.y,p1.x)] = p1_simu
 
         #for e1 in kanban_node.edges:
         #    print(e1)
 
         kanban_node = next(iter(kanban_node))
         out = ''
-        for _, p1 in kanban_node.mine.items():
-            print(p1)
+        for k1, p1 in kanban_node.mine.items():
+            #print(f'KEY {k1} PACMAN MINE {p1}')
             out = p1.write_move(out)
         print(out)
+
+        kanban_simu = KanbanSimulate(kanban_simu)
+        kanban_simu.skill, kanban_simu.move = update_order(MINE,out)
+        kanban_simu.simulate()
+
 
         # TODO: Add Simulator
         for c1, f1, d1 in read_order(out):
