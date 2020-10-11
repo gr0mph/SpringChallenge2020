@@ -17,6 +17,10 @@ PAC_INIT_INDEX = -1
 PAC_INIT_WAY = 0
 TURN = 0
 
+def manhattan(obj1,obj2):
+    distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
+    return distance
+
 def read_map():
     global WIDTH, HEIGHT
     WIDTH, HEIGHT = [int(i) for i in input().split()]
@@ -24,6 +28,14 @@ def read_map():
     global PACMAN_MAP
     for i in range(HEIGHT):
         PACMAN_MAP.append(list(input()))
+
+class Point():
+
+    def __init__(self,x,y):
+        self.x, self.y = x, y
+
+    def __str__(self):
+        return f'({self.x},{self.y})'
 
 class PathPlanning():
 
@@ -666,7 +678,7 @@ class Pacman():
         else :
             t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
 
-        t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+        t = f' {t} ' if in_text == '' else f'{in_text}| {t} '
         return t
 
     def write_2move(self, in_text):

@@ -109,17 +109,20 @@ class _predicting(unittest.TestCase):
 
         print()
         kanban_simu = KanbanSimulate(None)
+        # SETUP
         for k1, p1 in kanban_node.mine.items():
             print(f'KEY {k1} PACMAN MINE {p1}')
             p1_simu = PacmanSimulate(None)
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
-            kanban_simu.pacman[(p1.y,p1.x)] = p1_simu
+            kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
         for k1, p1 in kanban_node.opp.items():
             print(f'KEY {k1} PACMAN MINE {p1}')
             p1_simu = PacmanSimulate(None)
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
-            kanban_simu.pacman[(p1.y,p1.x)] = p1_simu
+            kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
 
+        for coord1,p1 in kanban_simu.pacman.items():
+            print(f'COORD {coord1} P {p1}')
         #for e1 in kanban_node.edges:
         #    print(e1)
 
@@ -132,20 +135,22 @@ class _predicting(unittest.TestCase):
 
         kanban_simu = KanbanSimulate(kanban_simu)
         kanban_simu.skill, kanban_simu.move = update_order(MINE,out)
+
+
         kanban_simu.simulate()
 
 
         # TODO: Add Simulator
-        for c1, f1, d1 in read_order(out):
-            f1(kanban_node,1,d1)
+        #for c1, f1, d1 in read_order(out):
+        #    f1(kanban_node,1,d1)
 
 
-        kanban_node = next(iter(kanban_node))
-        out = ''
-        for _, p1 in kanban_node.mine.items():
-            print(p1)
-            out = p1.write_move(out)
-        print(out)
+        #kanban_node = next(iter(kanban_node))
+        #out = ''
+        #for _, p1 in kanban_node.mine.items():
+        #    print(p1)
+        #    out = p1.write_move(out)
+        #print(out)
 
 
         return
