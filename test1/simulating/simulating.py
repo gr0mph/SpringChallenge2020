@@ -4,6 +4,7 @@ sys.path.append('../../')
 # Global Variable from Challenge
 from Challenge import TYPE_SET
 from Challenge import MINE
+from Challenge import OPP
 
 # Class from Challenge
 from Challenge import Point
@@ -25,13 +26,22 @@ class PacmanSimulate():
             self.id = 0    # Start: no pacman
             self.type, self.ability, self.speed = TYPE_SET['NEUTRAL'], 0 , 0
 
-class PointSimulate():
+    def __str__(self):
+        return f'(ID: {self.id}, {self.x},{self.y}), T_{self.type} , A_{self.ability} , S_{self.speed}'
+
+    @property
+    def coord(self):
+        return (self.y, self.x)
+
+class CaseSimulate():
 
     def __init__(self,clone):
         if clone is not None :
+            self.y, self.x = clone.y, clone.x
             self.pellet = clone.pellet
             self.pacman = clone.pacman
         else :
+            self.y, self.x = 0, 0
             self.pellet, self.pacman = 1, None
 
     def __str__(self):
@@ -39,6 +49,10 @@ class PointSimulate():
             return f'P:{self.pellet} PAC: NONE'
         else:
             return f'P:{self.pellet} PAC:{self.pacman.id},{self.pacman.type},{self.pacman.ability},{self.pacman.speed}'
+
+    @property
+    def coord(self):
+        return (self.y, self.x)
 
 def update_order(player,text):
     text, t1 = text.split('|'), ''
@@ -87,15 +101,28 @@ class KanbanSimulate():
     def __str__(self):
         return 'Complex KanbanSimulate'
 
-    def setup(self, mine, opp):
+    def setup1(self, mine, opp):
         all = []
         all.append(mine); all.append(opp)
         for p1 in all :
             p1_simu = PacmanSimulate(None)
+            p1_simu.y, p1_simu.x = p1.y, p1.x
             p1_simu.id = p1.id
             p1_simu.type, p1_simu.ability, p1_simu.speed = p1.type, p1.ability , p1.speed
             p1_coord = p1.y , p1.x
             self.pacman[p1_coord] = p1_simu
+
+    def setup2(self, node, case):
+        all = []
+        all.extend([n1 for k1, n1 in node.items()])
+        all.extend([c1 for k1, c1 in case.items()])
+        for p1 in all :
+            c1_simu = CaseSimulate(None)
+            c1_simu.y, c1_simu.x = p1.coord
+            c1_simu.pellet = p1.pellet
+            if c1_simu.coord in self.pacman:
+                c1_simu.pellet = 0
+            self.case[c1_simu.coord] = c1_simu
 
     def switch(self,data):
         p1 = next(iter([p1 for k1, p1 in self.pacman.items() if p1.id == data[0]]))
@@ -137,17 +164,25 @@ class KanbanSimulate():
                 self.move.append(t1)
         return
 
-    def resolve_move(self, step):
+    def resolve_move1(self):
+
+        print('RESOLVE MOVE 1')
+        pacman_d = {}
+        for k1, p1 in self.pacman.items():
+            y_k1, x_k1 = k1
+            for pac1 in iter(p1):
+                print(f' K {x_k1} {y_k1} P {pac1}')
+                pacman_d[pac1.id] = pac1
+
         arrival = {}
         #move = copy.copy(self.move)
         after = []
         while len(self.move) > 0:
             c1, f1, d1 = self.move.pop(0)
             i1, next_x1, next_y1 = d1[0], d1[1], d1[2]
-            coord1 = next(iter([coord1 for coord1,p1 in self.pacman.items() if p1[0].id == i1 ]))
-            p1 = self.pacman[coord1][0]
-            y1, x1 = coord1
             next_coord = next_y1, next_x1
+
+            p1, coord1, y1, x1 = pacman_d[i1],pacman_d[i1].coord, pacman_d[i1].y, pacman_d[i1].x
 
             dist1 = manhattan( Point(x1,y1) , Point(next_x1, next_y1) )
             if dist1 == 2 :
@@ -158,35 +193,67 @@ class KanbanSimulate():
                     if next_coord in self.case :
                         if next_coord in self.pacman :
                             self.pacman[coord1].remove(p1)
-                            self.pacmanl[next_coord].append(p1)
+                            self.pacman[next_coord].append(p1)
                         else :
                             self.pacman[coord1].remove(p1)
                             self.pacman[next_coord] = [ p1 ]
                         break
 
             elif dist1 == 1 :
-                if coord1 in self.pacman :
+                if next_coord in self.pacman :
                     self.pacman[coord1].remove(p1)
-                    self.pacmanl[next_coord].append(p1)
+                    self.pacman[next_coord].append(p1)
                 else :
                     self.pacman[coord1].remove(p1)
                     self.pacman[next_coord] = [ p1 ]
 
         return after
 
-    def resolve_move2(self,step):
-        collide = True
+    def resolve_move2(self):
+        # DO A LIST OF COLLISION
+        # ITS A SIMPLE LIST OF TUPLE
+        print('RESOLVE MOVE 2')
+
+        collide = False
         for coord1, p1 in self.pacman.items():
+            collide1 = []
             if len(p1) > 1 :
                 # Check collision
                 # IF 2 ID POSITIVE --> collide
                 # IF 2 ID NEGATIVE --> collide
                 # IF ONE ID POSITIVE, ONE ID NEGATIVE BUT SAME TYPE --> collide
+                work_p1 = copy.copy(p1)
+                while len(work_p1) > 0:
+                    pacman1 = work_p1.pop(0)
+                    for pacman2 in work_p1:
+                        # Check collide own pacman
+                        if pacman1.id * pacman2.id > 0 :
+                            collide = True
+                            collide1.append( pacman1 )
+                            coolide1.append( pacman2 )
+                        if pacman1.type == pacman2.type :
+                            collide = True
+                            collide1.append( pacman1 )
+                            coolide1.append( pacman2 )
 
-
+            for element_of_collide in collide1:
+                pacman1 = element_of_collide
+                if pacman1.coord != coord1 :
+                    if pacman1 in self.pacman[coord1]:
+                        self.pacman[coord1].remove(pacman1)
+                        self.pacman[pacman.coord].append(pacman1)
 
         return collide
-        print("MOVING...")
+
+    def resolve_move3(self, after):
+        print('RESOLVE MOVE 3')
+
+        self.move = after
+        for coord1, p1 in self.pacman.items():
+            y1, x1 = coord1
+            for element_of_p1 in p1:
+                pacman1 = element_of_p1
+                pacman1.x, pacman1.y = x1, y1
 
     def simulate(self):
         # 1 DECREMETER ABILITY
@@ -224,9 +291,10 @@ class KanbanSimulate():
 
     def simulate_movement(self):
         collide = True
-        self.step = self.step + 1
+        after = self.resolve_move1()
         while collide is True :
-            collide = self.resolve_move(self.step)
+            collide = self.resolve_move2()
+        self.resolve_move3(after)
 
     def simulate_dead(self):
         for k1, p1_s in self.pacman.items():
@@ -239,7 +307,6 @@ class KanbanSimulate():
                 elif p1.type == 2 and p2.type == 3 :    p1.type = 4 # P1 died
                 elif p1.type == 3 and p2.type == 2 :    p2.type = 4 # P2 died
                 elif p1.type == 3 and p2.type == 1 :    p1.type = 4 # P1 died
-
 
     def simulate_pellet(self):
         for k1, p1_s in self.pacman.items():

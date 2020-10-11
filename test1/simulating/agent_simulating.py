@@ -25,7 +25,7 @@ from Challenge import PathPlanning
 
 from test1.simulating.simulating import KanbanSimulate
 from test1.simulating.simulating import PacmanSimulate
-from test1.simulating.simulating import PointSimulate
+from test1.simulating.simulating import CaseSimulate
 
 # Global
 
@@ -113,16 +113,20 @@ class _predicting(unittest.TestCase):
         for k1, p1 in kanban_node.mine.items():
             print(f'KEY {k1} PACMAN MINE {p1}')
             p1_simu = PacmanSimulate(None)
+            p1_simu.x, p1_simu.y = p1.x, p1.y
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
             kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
         for k1, p1 in kanban_node.opp.items():
             print(f'KEY {k1} PACMAN MINE {p1}')
             p1_simu = PacmanSimulate(None)
+            p1_simu.x, p1_simu.y = p1.x, p1.y
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
             kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
 
-        for coord1,p1 in kanban_simu.pacman.items():
-            print(f'COORD {coord1} P {p1}')
+        kanban_simu.setup2(kanban_node.nodes, kanban_node.cases)
+
+        #for coord1,p1 in kanban_simu.pacman.items():
+        #    print(f'COORD {coord1} P {p1}')
         #for e1 in kanban_node.edges:
         #    print(e1)
 
