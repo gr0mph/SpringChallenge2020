@@ -3,6 +3,7 @@ sys.path.append('../../')
 
 # Global Variable from Challenge
 from Challenge import TYPE_SET
+from Challenge import TYPE_GET
 from Challenge import MINE
 from Challenge import OPP
 
@@ -13,6 +14,49 @@ from Challenge import Point
 from Challenge import manhattan
 
 SIMULATE_DISPLAY = { 'ALL' : 0 , 'PELLET' : 1 , 'TYPE' : 2 , 'ABILITY' : 3 , 'SPEED' : 4 }
+
+class KanbanBoard():
+
+    def __init__(self,clone):
+        pass
+
+    def __str__(self):
+        pass
+
+    def read_score(self, in_text):
+        # Can add an observer here
+        # TODO: ...
+        #   self.mine_score, self.opp_score = [int(i) for i in input().split()]
+        self.mine_score, self.opp_score = [int(i) for i in in_text.split()]
+        print(f'MINE: {self.mine_score} OPP: {self.opp_score}')
+
+    def read_pacman(self, in_text, pacmans):
+        # Can add an observer on an opp pacman that is watchable
+        # TODO: ...
+        # Can add an obserer on mine dead pacman that has happened
+        # TODO: ...
+        # Can add an observer on opp dead pacman that has happened
+        # TODO: ...
+        # Can add an observer on strange blocking movement
+        # TODO: ...
+        visible_pac_count = int(in_text.pop(0))
+        mine_pac_count = 0
+        for i in range(visible_pac_count):
+            state_in = in_text.pop(0).split()
+            state_in[4] = TYPE_SET[state_in[4]]
+            pacman_id, mine = int(state_in[0]), int(state_in[1])
+            if mine == OPP :
+                # Create a unique ID for each pacman
+                pacman_id = -1 * (pacman_id + 1)
+            else :
+                pacman_id = 1 * (pacman_id + 1)
+
+            p1 = pacmans[pacman_id]
+            print(p1)
+
+
+
+
 
 class PacmanSimulate():
 
@@ -27,7 +71,7 @@ class PacmanSimulate():
             self.type, self.ability, self.speed = TYPE_SET['NEUTRAL'], 0 , 0
 
     def __str__(self):
-        return f'(ID: {self.id}, {self.x},{self.y}), T_{self.type} , A_{self.ability} , S_{self.speed}'
+        return f'(ID: {self.id:3d}, {self.x:2d},{self.y:2d}), T_{self.type} , A_{self.ability:2d} , S_{self.speed}'
 
     @property
     def coord(self):
@@ -99,7 +143,12 @@ class KanbanSimulate():
 
 
     def __str__(self):
-        return 'Complex KanbanSimulate'
+        t = ''
+        for k1, p1 in self.pacman.items():
+            y_k1, x_k1 = k1
+            for pac1 in iter(p1):
+                t = f'{t}\nK {x_k1:2d} {y_k1:2d} P {pac1}'
+        return t
 
     def setup1(self, mine, opp):
         all = []
@@ -171,7 +220,7 @@ class KanbanSimulate():
         for k1, p1 in self.pacman.items():
             y_k1, x_k1 = k1
             for pac1 in iter(p1):
-                print(f' K {x_k1} {y_k1} P {pac1}')
+                #print(f' K {x_k1} {y_k1} P {pac1}')
                 pacman_d[pac1.id] = pac1
 
         arrival = {}
@@ -255,6 +304,10 @@ class KanbanSimulate():
                 pacman1 = element_of_p1
                 pacman1.x, pacman1.y = x1, y1
 
+    def resolve_move4(self):
+        #https://stackoverflow.com/questions/12118695/efficient-way-to-remove-keys-with-empty-strings-from-a-dict
+        self.pacman = { k: v for k, v in self.pacman.items() if len(v) > 0 }
+
     def simulate(self):
         # 1 DECREMETER ABILITY
         # 2 DECREMENTER SPEED
@@ -271,6 +324,18 @@ class KanbanSimulate():
         self.simulate_movement()
         self.simulate_dead()
         self.simulate_pellet()
+
+    def output(self):
+        t1 = f'{self.scoring[MINE]} {self.scoring[OPP]}'
+        i1, t2 = 0 , ''
+        for k1, p1 in self.pacman.items():
+
+            p1 = next(iter(p1))
+            if p1.id > 0 :
+                i1 = i1 + 1
+                t3 = f'{(p1.id - 1)} 1 {p1.x} {p1.y} {TYPE_GET[p1.type]} {p1.speed} {p1.ability}'
+                t2 = f'{t3}' if t2 == '' else f'{t2}\n{t3}'
+        return f'{t1}\n{i1}\n{t2}'
 
     def simulate_ability(self):
         for k1, p1 in self.pacman.items():
@@ -295,6 +360,7 @@ class KanbanSimulate():
         while collide is True :
             collide = self.resolve_move2()
         self.resolve_move3(after)
+        self.resolve_move4()
 
     def simulate_dead(self):
         for k1, p1_s in self.pacman.items():

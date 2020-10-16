@@ -27,6 +27,9 @@ from test1.simulating.simulating import KanbanSimulate
 from test1.simulating.simulating import PacmanSimulate
 from test1.simulating.simulating import CaseSimulate
 
+from test1.simulating.simulating import KanbanBoard
+
+
 # Global
 
 # Method
@@ -132,16 +135,35 @@ class _predicting(unittest.TestCase):
 
         kanban_node = next(iter(kanban_node))
         out = ''
+        pacmans = {}
         for k1, p1 in kanban_node.mine.items():
             #print(f'KEY {k1} PACMAN MINE {p1}')
             out = p1.write_move(out)
+            pacmans[p1.id] = p1
         print(out)
 
         kanban_simu = KanbanSimulate(kanban_simu)
-        kanban_simu.skill, kanban_simu.move = update_order(MINE,out)
+        kanban_simu.skill, kanban_simu.move = update_order(MINE,out)    #   Les ordres provenant
+                                                                        #   de moi
+                                                                        #   OPP: Les ordres provenant
+                                                                        #   de mon adversaire
 
 
+        print(kanban_simu)
         kanban_simu.simulate()
+        print(kanban_simu)
+
+        print("OUTPUT")
+        #print(kanban_simu.output())
+        in_text = kanban_simu.output()
+        in_text = in_text.split('\n')
+        print(in_text)
+
+
+        kanban_board = KanbanBoard(None)
+        kanban_board.read_score(in_text.pop(0))
+        kanban_board.read_pacman(in_text,pacmans)
+        #kanban_board.read_pacman
 
 
         # TODO: Add Simulator

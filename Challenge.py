@@ -11,6 +11,8 @@ EMPTY_SYMBOLS = ' '
 
 TYPE_GOAL = { 'NONE' : 0 , 'SUPER_PELLET' : 1 , 'OPP_PACMAN' : 2 , 'NOT_GUIDED' : 3 }
 TYPE_SET = { 'NEUTRAL' : 0 , 'ROCK' : 1 , 'PAPER' : 2 , 'SCISSORS' : 3 , 'DEAD' : 4 }
+TYPE_GET = { 0 : 'NEUTRAL' , 1 : 'ROCK' , 2 : 'PAPER' , 3 : 'SCISSORS' , 4 : 'DEAD' }
+
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 NB_NODES = 0
 PAC_INIT_INDEX = -1
@@ -562,6 +564,23 @@ class Pacman():
             return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},t:{self.speed:2d})'
         else :
             return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},t:{self.speed:2d})'
+
+    def update2(self,state):
+        # Create setter to add easily observer.
+        pass
+
+    @coord.setter
+    def coord(self,coord):
+        # Check coordonate
+        if coord != self.predict.coord :
+            # TODO: Add observer
+        self.y, self.x = coord
+
+
+
+
+
+
 
 
     def update(self,state):
