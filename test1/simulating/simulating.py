@@ -53,6 +53,7 @@ class KanbanBoard():
 
             p1 = pacmans[pacman_id]
             print(p1)
+            p1.coord = int(state_in[3]), int(state_in[2])
 
 
 

@@ -539,16 +539,32 @@ class BoardNodesAndEdges():
 
         return kanban_predicted
 
+class PacmanPredict():
+
+    def __init__(self,clone):
+        self.x, self.y = clone.x, clone.y
+        self.type , self.ability, self.speed = clone.type, clone.ability, clone.speed
+        self.command = 'UNKNOW'
+
+    def __str__(self):
+        return f'(x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},t:{self.speed:2d})'
+
+    @property
+    def coord(self):
+        return (self.y, self.x)
+
+
+
 class Pacman():
 
     def __init__(self,clone):
         self.id, self.mine = -1, -1
         self.out = ''
-        self.state = None
         self.x, self.y, self.type = 0,0,0
         self.ability, self.speed = 0, 0
         self.path = None
         self.kanban = None
+        self.predict = None
 
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
@@ -569,16 +585,33 @@ class Pacman():
         # Create setter to add easily observer.
         pass
 
+    @property
+    def coord(self):
+        return (self.y, self.x)
+
     @coord.setter
     def coord(self,coord):
         # Check coordonate
         if coord != self.predict.coord :
+            print(f'COORD {coord} PREDICT COORD {self.predict.coord}')
+            print("CHANGE has been detected !")
             # TODO: Add observer
+        else:
+            if self.predict.command == 'MOVE2': self.path.pop(0); self.path.pop(0)
+            if self.predict.command == 'MOVE1': self.path.pop(0)
+
         self.y, self.x = coord
 
+    @property
+    def state(self):
+        return (self.type, self.ability, self.speed)
 
-
-
+    @state.setter
+    def state(self, state):
+        if state[0] != self.predict.type :
+            print("TYPE CHANGE has been detected")
+            # TODO: Add observer
+        self.type = state[0]
 
 
 
@@ -688,13 +721,23 @@ class Pacman():
         if self.speed > 0 and self.path is not None and len(self.path) > 1 :
             c1 =  self.path[1]
             y1 , x1 = c1.coord
+            predict = PacmanPredict(self)
+            predict.x, predict.y, predict.command = x1, y1, 'MOVE2'
+            self.predict = predict
+
             t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
 
         elif self.path is not None and len(self.path) > 0 :
             c1 =  self.path[0]
             y1 , x1 = c1.coord
+            predict = PacmanPredict(self)
+            predict.x, predict.y, predict.command = x1, y1, 'MOVE1'
+            self.predict = predict
             t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
         else :
+            predict = PacmanPredict(self)
+            predict.x, predict.y, predict.command = self.x, self.y, 'MOVE0'
+            self.predict = predict
             t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
 
         t = f' {t} ' if in_text == '' else f'{in_text}| {t} '
@@ -715,10 +758,6 @@ class Pacman():
         else :
             t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
         return t
-
-    @property
-    def coord(self):
-        return (self.y, self.x)
 
     def write_cmd(self, in_text):
         if self.speed > 0 and self.path is not None and len(self.path) > 1 :

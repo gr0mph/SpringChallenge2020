@@ -165,6 +165,34 @@ class _predicting(unittest.TestCase):
         kanban_board.read_pacman(in_text,pacmans)
         #kanban_board.read_pacman
 
+        out = ''
+        for k1, p1 in pacmans.items():
+            print(p1)
+            out = p1.write_move(out)
+        print(out)
+
+        kanban_simu = KanbanSimulate(kanban_simu)
+        kanban_simu.skill, kanban_simu.move = update_order(MINE,out)    #   Les ordres provenant
+                                                                        #   de moi
+                                                                        #   OPP: Les ordres provenant
+                                                                        #   de mon adversaire
+
+
+        print(kanban_simu)
+        kanban_simu.simulate()
+        print(kanban_simu)
+
+        print("OUTPUT")
+        #print(kanban_simu.output())
+        in_text = kanban_simu.output()
+        in_text = in_text.split('\n')
+        print(in_text)
+
+
+        kanban_board = KanbanBoard(None)
+        kanban_board.read_score(in_text.pop(0))
+        kanban_board.read_pacman(in_text,pacmans)
+
 
         # TODO: Add Simulator
         #for c1, f1, d1 in read_order(out):
