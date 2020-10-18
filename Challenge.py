@@ -12,6 +12,10 @@ EMPTY_SYMBOLS = ' '
 TYPE_GOAL = { 'NONE' : 0 , 'SUPER_PELLET' : 1 , 'OPP_PACMAN' : 2 , 'NOT_GUIDED' : 3 }
 TYPE_SET = { 'NEUTRAL' : 0 , 'ROCK' : 1 , 'PAPER' : 2 , 'SCISSORS' : 3 , 'DEAD' : 4 }
 TYPE_GET = { 0 : 'NEUTRAL' , 1 : 'ROCK' , 2 : 'PAPER' , 3 : 'SCISSORS' , 4 : 'DEAD' }
+TYPE_SWITCH = { 0 : () , 1 : (2,3) , 2 : (1,3) , 3 : (1,2) , 4 : () }
+
+POSSIBILITY_SET = { 'PREVIOUS' : 0 , 'SUPER_PELLET' : 1 , 'OPP_PACMAN' : 2 , 'NOT_GUIDED' : 3 }
+POSSIBILITY_GET = { 0 : 'PREVIOUS' , 1 : 'SUPER_PELLET' , 2 : 'OPP_PACMAN' , 3 : 'NOT_GUIDED' }
 
 DIRS = [('N',-1, 0), ('S',1, 0), ('E',0, 1), ('W',0, -1)]
 NB_NODES = 0
@@ -565,6 +569,7 @@ class Pacman():
         self.path = None
         self.kanban = None
         self.predict = None
+        self.possibility = {}
 
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
@@ -767,6 +772,64 @@ class Pacman():
             if self.ability == 0 :
                 yield self.write_speed(in_text)
                 yield self.write_switch(in_text)
+
+    def deploy_cmd(self):
+        commands = []
+
+        for k1, v1 in POSSIBILITY_SET.items() :
+            if k1 in self.possibility :             # 'SUPER_PELLET'
+                #   TODO
+                if self.ability == 0 :
+                    # WRITE SPEED # WRITE PATH      # APPEND
+                    p1_clone = Pacman(self)
+                    p1_clone.path = self.possibility[k1]
+                    p1_clone.predict = PacmanPredict(p1_clone)
+                    p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
+                    p1_clone.predict.command = 'SPEED'
+                    p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = self.type, 10, 5
+                    commands.append(p1_clone)
+
+                    # WRITE SWITCH # WRITE PATH     # APPEND
+                    p1_clone = Pacman(self)
+                    p1_clone.path = self.possibility[k1]
+                    p1_clone.predict = PacmanPredict(p1_clone)
+                    p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
+                    p1_clone.predict.command = 'SWITCH'
+                    p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = TYPE_SWITCH[self.type][0], 10, 0
+                    commands.append(p1_clone)
+
+                    # WRITE SWITCH # WRITE PATH     # APPEND
+                    p1_clone = Pacman(self)
+                    p1_clone.path = self.possibility[k1]
+                    p1_clone.predict = PacmanPredict(p1_clone)
+                    p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
+                    p1_clone.predict.command = 'SWITCH'
+                    p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = TYPE_SWITCH[self.type][1], 10, 0
+                    commands.append(p1_clone)
+
+                else :
+                    # WRITE PATH
+                    p1_clone = Pacman(self)
+                    p1_clone.path = self.possibility[k1]
+                    p1_clone.predict = PacmanPredict(p1_clone)
+                    if p1_clone.speed > 0 and p1_clone.path is not None and len(p1_clone.path) > 1 :
+                        p1_clone.predict.command = 'MOVE2'
+                        y1, x1 = c1 = p1_clone.path[1]
+                        p1_clone.predict.x, p1_clone.predict.y = x1, y1
+
+                    elif p1_clone.path is not None and len(p1_clone.path) > 0 :
+                        p1_clone.predict.command = 'MOVE1'
+                        y1, x1 = c1 = p1_clone.path[0]
+                        p1_clone.predict.x, p1_clone.predict.y = x1, y1
+
+                    else :
+                        p1_clone.predict.command = 'MOVE0'
+                        p1_clone.predict.x, p1_clone.predict.y = p1_clone.x, p1_clone.y
+
+                    p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = TYPE_SWITCH[self.type][0], 10, 0
+                    commands.append(p1_clone)
+        return commands
+
 
 def t_coord(coord):
     y, x = coord
