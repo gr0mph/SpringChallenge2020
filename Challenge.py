@@ -522,11 +522,17 @@ class BoardNodesAndEdges():
             desired_opp_pacman = (i1,TYPE_GOAL['OPP_PACMAN'])
 
             if desired_super_pellet in pacman_result:
+                m1.possibility['SUPER_PELLET'] = pacman_result[desired_super_pellet]
                 m1.path = pacman_result[desired_super_pellet]
             elif desired_not_guided in pacman_result:
+                m1.possibility['NOT_GUIDED'] = pacman_result[desired_not_guided]
                 m1.path = pacman_result[desired_not_guided]
             elif desired_opp_pacman in pacman_result:
+                m1.possibility['OPP_PACMAN'] = pacman_result[desired_opp_pacman]
                 m1.path = pacman_result[desired_opp_pacman]
+            else :
+                m1.possibility['PREVIOUS'] = m1.path
+                
 
     def __next__(self):
 

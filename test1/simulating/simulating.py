@@ -56,7 +56,60 @@ class KanbanBoard():
             p1.coord = int(state_in[3]), int(state_in[2])
 
 
+def iterate(input,data,prev_id):
 
+    for i2 in input:
+        print(f'INPUT : {i2}')
+    for i2 in data:
+        print(f'DATA_ : {i2}')
+    print(f'PREV_ID : {prev_id}')
+    print("")
+
+    index = 0
+
+    next_data = []
+    next_id = False
+    for i1 in data:
+        if i1.id != prev_id and next_id == False :  next_id = i1.id
+        if next_id != False :                       next_data.append(i1)
+
+    for i1 in next_data:
+
+        print(f'FOR {i1} ID {i1.id} NEXT_ID {next_id}')
+        if i1.id == next_id:
+            output = copy.copy(input)
+            output.append(i1)
+            for i2 in output:
+                print(f'ITERATE {i2}')
+            print()
+            return iterate(output,next_data, next_id)
+    else :
+        return input
+
+    #append
+    #return output
+
+def iterate2( prev_output , prev_input , prev_id ):
+    next_input = []
+    next_id = False
+    for i1,d1 in prev_input :
+        if i1 != prev_id and next_id == False : next_id = i1
+        if next_id != False :                   next_input.append( (i1,d1) )
+
+    if next_id == False:
+        return prev_output
+
+    next_output = [ ]
+    while prev_output :
+        curr_output = prev_output.pop(0)
+
+        for i1, d1 in next_input :
+            if i1 == next_id :
+                o1 = copy.copy(curr_output)
+                o1.append(d1)
+                next_output.append(o1)
+
+    return iterate2( next_output , next_input , next_id )
 
 
 class PacmanSimulate():

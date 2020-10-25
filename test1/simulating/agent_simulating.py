@@ -29,6 +29,9 @@ from test1.simulating.simulating import CaseSimulate
 
 from test1.simulating.simulating import KanbanBoard
 
+# Function
+from test1.simulating.simulating import iterate
+from test1.simulating.simulating import iterate2
 
 # Global
 
@@ -95,7 +98,7 @@ def read_order(text):
 
 class _predicting(unittest.TestCase):
 
-    def test_predecting(self):
+    def _predecting(self):
         t_check_map(PACMAN_MAP)
 
         kanban_node = BoardNodesAndEdges(None)
@@ -215,6 +218,119 @@ class _predicting(unittest.TestCase):
 
 
         return
+
+    def _predecting2(self):
+        t_check_map(PACMAN_MAP)
+
+        kanban_node = BoardNodesAndEdges(None)
+        kanban_node.set_up(PACMAN_MAP)
+
+        # INIT PACMAN
+        kanban_node = init_pacman_from_list(kanban_node, PACMAN_LIST)
+
+        # INIT PELLET
+        kanban_node = init_pellet_from_list(kanban_node, PELLET_LIST)
+
+        pather = PathPlanning(None)
+        kanban_node.pather = pather
+
+        print()
+        kanban_simu = KanbanSimulate(None)
+
+        # SETUP
+        for k1, p1 in kanban_node.mine.items():
+            print(f'KEY {k1} PACMAN MINE {p1}')
+            p1_simu = PacmanSimulate(None)
+            p1_simu.x, p1_simu.y = p1.x, p1.y
+            p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
+
+        for k1, p1 in kanban_node.opp.items():
+            print(f'KEY {k1} PACMAN MINE {p1}')
+            p1_simu = PacmanSimulate(None)
+            p1_simu.x, p1_simu.y = p1.x, p1.y
+            p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
+
+        kanban_simu.setup2(kanban_node.nodes, kanban_node.cases)
+
+        print("TEST")
+
+        kanban_node = next(iter(kanban_node))
+        out = ''
+        pacmans = {}
+        cmd = {}
+        outs = []
+        for k1, p1 in kanban_node.mine.items():
+            print(f'KEY {k1} PACMAN MINE {p1}')
+            outs.extend(p1.deploy_cmd())
+            for o1 in outs:
+                print(o1)
+
+        print("TEST1")
+
+        start = []
+        result = iterate( start , outs , 0 )
+        for r1 in result :
+            print(r1)
+
+
+        print("TEST2")
+
+        for b1 in back:
+            for p1 in b1:
+                print(p1)
+
+    def test_iterate2(self):
+
+        input = [ (1,1) , (1,2) , (1,3) , (2,1) , (2,2) , (3,2) , (3,3) , (3,4) ]
+        id = 0
+        output = [ [] ]
+
+        output = iterate2( output , input , id )
+
+        for o1 in output:
+            print("BRANCH:")
+            for d1 in o1:
+                print(d1)
+            print()
+
+
+        # print(out)
+        #
+        # kanban_simu = KanbanSimulate(kanban_simu)
+        # kanban_simu.skill, kanban_simu.move = update_order(MINE,out)    #   Les ordres provenant
+        #                                                                 #   de moi
+        #                                                                 #   OPP: Les ordres provenant
+        #                                                                 #   de mon adversaire
+
+
+        # print(kanban_simu)
+        # kanban_simu.simulate()
+        # print(kanban_simu)
+        #
+        # print("OUTPUT")
+        # #print(kanban_simu.output())
+        # in_text = kanban_simu.output()
+        # in_text = in_text.split('\n')
+        # print(in_text)
+        #
+        #
+        # kanban_board = KanbanBoard(None)
+        # kanban_board.read_score(in_text.pop(0))
+        # kanban_board.read_pacman(in_text,pacmans)
+        #kanban_board.read_pacman
+
+        # previous_out = out
+        # out = ''
+        #
+        # while previous_out != out :
+        #     previous_out = out
+        #     out = ''
+        #     for k1, p1 in pacmans.items():
+        #         print(p1)
+        #         out = p1.write_move(out)
+        #     print(out)
 
 if __name__ == '__main__':
     unittest.main()
