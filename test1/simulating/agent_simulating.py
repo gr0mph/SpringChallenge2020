@@ -219,7 +219,7 @@ class _predicting(unittest.TestCase):
 
         return
 
-    def _predecting2(self):
+    def test_predecting2(self):
         t_check_map(PACMAN_MAP)
 
         kanban_node = BoardNodesAndEdges(None)
@@ -263,25 +263,62 @@ class _predicting(unittest.TestCase):
         outs = []
         for k1, p1 in kanban_node.mine.items():
             print(f'KEY {k1} PACMAN MINE {p1}')
-            outs.extend(p1.deploy_cmd())
-            for o1 in outs:
-                print(o1)
+            p1 = p1.deploy_cmd()
+            for n1 in p1:
+                outs.append( (n1.id,n1) )
 
-        print("TEST1")
-
-        start = []
-        result = iterate( start , outs , 0 )
+        start = [[]]
+        result = iterate2( start , outs , 0 )
         for r1 in result :
-            print(r1)
+            print("SERIAL")
+
+
+            previous_out = None
+            out = ''
+            while previous_out != out :
+
+                out = ''
+                for p1 in r1:
+                    out = p1.write_cmd(out)
+
+                kanban_simu = KanbanSimulate(kanban_simu)
+                kanban_simu.skill, kanban_simu.move = update_order(MINE,out)    #   Les ordres provenant
+                                                                                #   de moi
+                                                                                #   OPP: Les ordres provenant
+                                                                                #   de mon adversaire
+
+
+                print(kanban_simu)
+                kanban_simu.simulate()
+                print(kanban_simu)
+
+                print("OUTPUT")
+                #print(kanban_simu.output())
+                in_text = kanban_simu.output()
+                in_text = in_text.split('\n')
+                print(in_text)
+
+                kanban_board = KanbanBoard(None)
+
+                kanban_board.read_score(in_text.pop(0))
+
+                d_pacman = kanban_board.from_list_to_dict(r1)
+
+                kanban_board.read_pacman(in_text,d_pacman)
+
+
+                break
+            # Get score
+            # IF MAX Select current branch
+            break
 
 
         print("TEST2")
 
-        for b1 in back:
-            for p1 in b1:
-                print(p1)
 
-    def test_iterate2(self):
+
+
+    def _iterate2(self):
 
         input = [ (1,1) , (1,2) , (1,3) , (2,1) , (2,2) , (3,2) , (3,3) , (3,4) ]
         id = 0

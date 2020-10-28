@@ -30,6 +30,17 @@ class KanbanBoard():
         self.mine_score, self.opp_score = [int(i) for i in in_text.split()]
         print(f'MINE: {self.mine_score} OPP: {self.opp_score}')
 
+    def from_list_to_dict(self, in_pacmans):
+        out_pacmans = {}
+        pacman_id = 0
+        for p1 in in_pacmans:
+            # Create a unique ID for each pacman
+            if p1.mine == OPP : pacman_id = -1 * (pacman_id + 1)
+            else :              pacman_id = +1 * (pacman_id + 1)
+            out_pacmans[pacman_id] = p1
+        return out_pacmans
+
+
     def read_pacman(self, in_text, pacmans):
         # Can add an observer on an opp pacman that is watchable
         # TODO: ...
@@ -52,9 +63,8 @@ class KanbanBoard():
                 pacman_id = 1 * (pacman_id + 1)
 
             p1 = pacmans[pacman_id]
-            print(p1)
             p1.coord = int(state_in[3]), int(state_in[2])
-
+            p1.state = state_in[4], int(state_in[5]), int(state_in[6])
 
 def iterate(input,data,prev_id):
 
@@ -159,9 +169,10 @@ def update_order(player,text):
     for t1 in text:
         try:
             c1, f1 = next( (c1,f1) for c1,f1 in SKILL_COMMAND if t1.find(c1) != -1 )
+
             t_list = t1.split(' ')
-            _,d1 = t_list[0], t_list[1:]
-            d1[0] = d1[0] + 1 if player == MINE else -(d1[0] + 1)
+            d1 = t_list[2:]
+            d1[0] = int(d1[0]) + 1 if player == MINE else -(int(d1[0]) + 1)
             skill.append( (c1, f1, d1 ) )
         except:
             pass
@@ -228,16 +239,18 @@ class KanbanSimulate():
             self.case[c1_simu.coord] = c1_simu
 
     def switch(self,data):
-        p1 = next(iter([p1 for k1, p1 in self.pacman.items() if p1.id == data[0]]))
-        if p1.ability > 0 : return
-        if p1.type == TYPE_SET['DEAD'] : return
-        p1.type = data[1]
+        p1 = next(iter([p1 for k1, p1 in self.pacman.items() if p1[0].id == data[0]]))
+        if p1[0].ability > 0 : return
+        if p1[0].type == TYPE_SET['DEAD'] : return
+        p1[0].type = data[1]
+        p1[0].ability = 10
 
     def speed(self, data):
-        p1 = next(iter([p1 for k1,p1 in self.pacman.items() if p1.id == data[0]]))
-        if p1.ability > 0 : return
-        if p1.type == TYPE_SET['DEAD'] : return
-        p1.speed = 6
+        p1 = next(iter([p1 for k1,p1 in self.pacman.items() if p1[0].id == data[0]]))
+        if p1[0].ability > 0 : return
+        if p1[0].type == TYPE_SET['DEAD'] : return
+        p1[0].speed = 5
+        p1[0].ability = 10
 
     # StackOverflow
     # https://stackoverflow.com/questions/3199171/append-multiple-values-for-one-key-in-a-dictionary
@@ -269,7 +282,6 @@ class KanbanSimulate():
 
     def resolve_move1(self):
 
-        print('RESOLVE MOVE 1')
         pacman_d = {}
         for k1, p1 in self.pacman.items():
             y_k1, x_k1 = k1
@@ -315,7 +327,6 @@ class KanbanSimulate():
     def resolve_move2(self):
         # DO A LIST OF COLLISION
         # ITS A SIMPLE LIST OF TUPLE
-        print('RESOLVE MOVE 2')
 
         collide = False
         for coord1, p1 in self.pacman.items():
@@ -349,8 +360,6 @@ class KanbanSimulate():
         return collide
 
     def resolve_move3(self, after):
-        print('RESOLVE MOVE 3')
-
         self.move = after
         for coord1, p1 in self.pacman.items():
             y1, x1 = coord1
@@ -403,7 +412,7 @@ class KanbanSimulate():
 
     def simulate_skill(self):
         for c1, f1, d1 in self.skill :
-            self.f1(d1)
+            f1(self,d1)
         #for c1, f1, d1 in self.move :
         #    print(f'MOVE>>> C1 {c1} F1 {f1} D1 {d1}')
         #    self.f1(d1)

@@ -532,7 +532,7 @@ class BoardNodesAndEdges():
                 m1.path = pacman_result[desired_opp_pacman]
             else :
                 m1.possibility['PREVIOUS'] = m1.path
-                
+
 
     def __next__(self):
 
@@ -557,7 +557,7 @@ class PacmanPredict():
         self.command = 'UNKNOW'
 
     def __str__(self):
-        return f'(x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},t:{self.speed:2d})'
+        return f'(x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},s:{self.speed:2d})'
 
     @property
     def coord(self):
@@ -588,9 +588,9 @@ class Pacman():
         if self is None :
             return 'Pacman None...'
         if self.mine == MINE :
-            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},t:{self.speed:2d})'
+            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},s:{self.speed:2d})'
         else :
-            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},t:{self.speed:2d})'
+            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},s:{self.speed:2d})'
 
     def update2(self,state):
         # Create setter to add easily observer.
@@ -603,6 +603,9 @@ class Pacman():
     @coord.setter
     def coord(self,coord):
         # Check coordonate
+        print(f'SELF {self}')
+        print(f'PREDICT {self.predict}')
+        print()
         if coord != self.predict.coord :
             print(f'COORD {coord} PREDICT COORD {self.predict.coord}')
             print("CHANGE has been detected !")
@@ -622,7 +625,14 @@ class Pacman():
         if state[0] != self.predict.type :
             print("TYPE CHANGE has been detected")
             # TODO: Add observer
-        self.type = state[0]
+        if state[1] != self.predict.speed :
+            print("SPEED CHANGE has been detected")
+            # TODO: Add observer
+        if state[2] != self.predict.ability :
+            print("ABILITY CHANGE has been detected")
+            # TODO: Add observer
+
+        self.type, self.speed, self.ability = state[0], state[1], state[2]
 
 
 
@@ -778,6 +788,28 @@ class Pacman():
             if self.ability == 0 :
                 yield self.write_speed(in_text)
                 yield self.write_switch(in_text)
+
+    def write_cmd(self, in_text):
+        if self.predict.command == 'SPEED':
+            t = f'SPEED {self.id-1}'
+            t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+
+        elif self.predict.command == 'SWITCH':
+            t = f'SWITCH {self.id-1} {TYPE_GET[self.predict.type]}'
+            t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+
+        elif self.predict.command == 'MOVE2':
+            t = f'MOVE {self.id-1} {str(self.predict.x)} {str(self.predict.y)}'
+            t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+
+        elif self.predict.command == 'MOVE1':
+            t = f'MOVE {self.id-1} {str(self.predict.x)} {str(self.predict.y)}'
+            t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+
+        elif self.predict.command == 'MOVE0':
+            t = f'MOVE {self.id-1} {str(self.predict.x)} {str(self.predict.y)}'
+            t = f' {t}' if in_text == '' else f'{in_text} | {t}'
+        return t
 
     def deploy_cmd(self):
         commands = []
