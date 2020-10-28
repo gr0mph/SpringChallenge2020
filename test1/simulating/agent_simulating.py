@@ -239,14 +239,14 @@ class _predicting(unittest.TestCase):
 
         # SETUP
         for k1, p1 in kanban_node.mine.items():
-            print(f'KEY {k1} PACMAN MINE {p1}')
+            #print(f'KEY {k1} PACMAN MINE {p1}')
             p1_simu = PacmanSimulate(None)
             p1_simu.x, p1_simu.y = p1.x, p1.y
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
             kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
 
         for k1, p1 in kanban_node.opp.items():
-            print(f'KEY {k1} PACMAN MINE {p1}')
+            #print(f'KEY {k1} PACMAN MINE {p1}')
             p1_simu = PacmanSimulate(None)
             p1_simu.x, p1_simu.y = p1.x, p1.y
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
@@ -254,15 +254,13 @@ class _predicting(unittest.TestCase):
 
         kanban_simu.setup2(kanban_node.nodes, kanban_node.cases)
 
-        print("TEST")
-
         kanban_node = next(iter(kanban_node))
         out = ''
         pacmans = {}
         cmd = {}
         outs = []
         for k1, p1 in kanban_node.mine.items():
-            print(f'KEY {k1} PACMAN MINE {p1}')
+            #print(f'KEY {k1} PACMAN MINE {p1}')
             p1 = p1.deploy_cmd()
             for n1 in p1:
                 outs.append( (n1.id,n1) )
@@ -275,11 +273,13 @@ class _predicting(unittest.TestCase):
 
             previous_out = None
             out = ''
+            i1 = 0
             while previous_out != out :
 
                 out = ''
                 for p1 in r1:
                     out = p1.write_cmd(out)
+                print(f'OUT >> {out}')
 
                 kanban_simu = KanbanSimulate(kanban_simu)
                 kanban_simu.skill, kanban_simu.move = update_order(MINE,out)    #   Les ordres provenant
@@ -288,15 +288,15 @@ class _predicting(unittest.TestCase):
                                                                                 #   de mon adversaire
 
 
-                print(kanban_simu)
+                #print(kanban_simu)
                 kanban_simu.simulate()
-                print(kanban_simu)
+                #print(kanban_simu)
 
-                print("OUTPUT")
                 #print(kanban_simu.output())
                 in_text = kanban_simu.output()
                 in_text = in_text.split('\n')
-                print(in_text)
+
+                print(f'IN >> {in_text}')
 
                 kanban_board = KanbanBoard(None)
 
@@ -306,8 +306,11 @@ class _predicting(unittest.TestCase):
 
                 kanban_board.read_pacman(in_text,d_pacman)
 
+                kanban_board.predict_pacman(d_pacman)
 
-                break
+                i1 = i1 + 1
+                if i1 == 2: break
+
             # Get score
             # IF MAX Select current branch
             break

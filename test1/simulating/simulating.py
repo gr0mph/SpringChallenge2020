@@ -6,9 +6,11 @@ from Challenge import TYPE_SET
 from Challenge import TYPE_GET
 from Challenge import MINE
 from Challenge import OPP
+from Challenge import DIRS
 
 # Class from Challenge
 from Challenge import Point
+from Challenge import Pacman
 
 # Method from Challenge
 from Challenge import manhattan
@@ -28,7 +30,7 @@ class KanbanBoard():
         # TODO: ...
         #   self.mine_score, self.opp_score = [int(i) for i in input().split()]
         self.mine_score, self.opp_score = [int(i) for i in in_text.split()]
-        print(f'MINE: {self.mine_score} OPP: {self.opp_score}')
+        #print(f'MINE: {self.mine_score} OPP: {self.opp_score}')
 
     def from_list_to_dict(self, in_pacmans):
         out_pacmans = {}
@@ -65,6 +67,10 @@ class KanbanBoard():
             p1 = pacmans[pacman_id]
             p1.coord = int(state_in[3]), int(state_in[2])
             p1.state = state_in[4], int(state_in[5]), int(state_in[6])
+
+    def predict_pacman(self, d_pacman):
+        for _, p1 in d_pacman.items():
+            p1.get_predict()
 
 def iterate(input,data,prev_id):
 

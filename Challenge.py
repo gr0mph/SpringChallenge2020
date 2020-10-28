@@ -588,9 +588,9 @@ class Pacman():
         if self is None :
             return 'Pacman None...'
         if self.mine == MINE :
-            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},s:{self.speed:2d})'
+            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},s:{self.speed:2d})'
         else :
-            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{self.type:2d},a:{self.ability:2d},s:{self.speed:2d})'
+            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},s:{self.speed:2d})'
 
     def update2(self,state):
         # Create setter to add easily observer.
@@ -603,9 +603,6 @@ class Pacman():
     @coord.setter
     def coord(self,coord):
         # Check coordonate
-        print(f'SELF {self}')
-        print(f'PREDICT {self.predict}')
-        print()
         if coord != self.predict.coord :
             print(f'COORD {coord} PREDICT COORD {self.predict.coord}')
             print("CHANGE has been detected !")
@@ -631,6 +628,16 @@ class Pacman():
         if state[2] != self.predict.ability :
             print("ABILITY CHANGE has been detected")
             # TODO: Add observer
+
+        if self.predict.command == 'SPEED':
+            if len(self.path) > 1 : self.predict.command = 'MOVE2'
+            elif len(self.path) > 0 : self.predict.command = 'MOVE1'
+            else : self.predict.command = 'MOVE0'
+
+        if self.predict.command == 'SWITCH':
+            if len(self.path) > 0 : self.predict.command = 'MOVE1'
+            else : self.predict.command = 'MOVE0'
+
 
         self.type, self.speed, self.ability = state[0], state[1], state[2]
 
@@ -780,14 +787,18 @@ class Pacman():
             t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
         return t
 
-    def write_cmd(self, in_text):
+    def get_predict(self):
         if self.speed > 0 and self.path is not None and len(self.path) > 1 :
-            yield self.write_2move(in_text)
+            self.predict.command = 'MOVE2'
+            self.predict.y, self.predict.x = self.path[1].coord
+        elif self.path is not None and len(self.path) > 0 :
+            self.predict.command = 'MOVE1'
+            self.predict.y, self.predict.x = self.path[0].coord
         else :
-            yield self.write_1move(in_text)
-            if self.ability == 0 :
-                yield self.write_speed(in_text)
-                yield self.write_switch(in_text)
+            self.predict.command = 'MOVE0'
+            self.predict.y, self.predict.x = self.y, self.x
+        self.predict.ability = max(self.ability - 1 , 0)
+        self.predict.speed = max(self.speed - 1 , 0)
 
     def write_cmd(self, in_text):
         if self.predict.command == 'SPEED':
@@ -799,6 +810,7 @@ class Pacman():
             t = f' {t}' if in_text == '' else f'{in_text} | {t}'
 
         elif self.predict.command == 'MOVE2':
+
             t = f'MOVE {self.id-1} {str(self.predict.x)} {str(self.predict.y)}'
             t = f' {t}' if in_text == '' else f'{in_text} | {t}'
 
