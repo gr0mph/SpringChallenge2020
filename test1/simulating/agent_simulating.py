@@ -1,4 +1,4 @@
-import sys
+import sys, math
 sys.path.append('../../')
 
 # Global Variables
@@ -233,7 +233,6 @@ class _predicting(unittest.TestCase):
         pather = PathPlanning(None)
         kanban_node.pather = pather
 
-        print()
         kanban_simu = KanbanSimulate(None)
 
         # SETUP
@@ -271,20 +270,23 @@ class _predicting(unittest.TestCase):
                 n1 = Pacman(n1)
                 outs.append( (n1.id,n1) )
 
+        # SAVE
+        print(f'SAVING')
+        kanban_simu.memento = kanban_simu
+
+        # SAVE CASE
+        for k1, c1 in kanban_simu.case.items():
+            c1.memento = c1
+
         start = [[]]
         result = iterate2( start , outs , 0 )
+
         i2 = 0
+        d_pacman_max = None
+        scored_max = -math.inf
         for r1 in result :
             print("SERIAL")
 
-            # SAVE
-            kanban_simu.memento = kanban_simu
-            print(f'SCORING SAVED {kanban_simu._memento.scoring}')
-
-            # SAVE CASE
-            for k1, c1 in kanban_simu.case.items():
-                c1.memento = c1
-            print()
 
             previous_out = None
             out = ''
@@ -326,9 +328,6 @@ class _predicting(unittest.TestCase):
                 i1 = i1 + 1
                 if i1 == 5: break
 
-            # Get score
-            # IF MAX Select current branch
-            print()
 
             # Memento
             d_pacman = {}
@@ -346,7 +345,6 @@ class _predicting(unittest.TestCase):
 
             # Memento
             kanban_simu = kanban_simu.memento
-            print(f'SCORING RESTORED {kanban_simu.scoring}')
 
             # Restore PacmanSimulate
             kanban_simu.case = d_case
@@ -356,14 +354,21 @@ class _predicting(unittest.TestCase):
             for p1 in r1:
                 p1 = p1.memento
 
+            # Get score
+            # IF MAX Select current branch
+            if scored_max < (kanban_board.mine_score - kanban_board.opp_score):
+                scored_max = kanban_board.mine_score - kanban_board.opp_score
+                d_pacman_max = r1
+
             i2 = i2 + 1
             if i2 == 3 : break
 
 
         print("TEST2")
-
-
-
+        out = ''
+        for p1 in d_pacman_max:
+            out = p1.write_cmd(out)
+        print(out)
 
     def _iterate2(self):
 
@@ -378,43 +383,6 @@ class _predicting(unittest.TestCase):
             for d1 in o1:
                 print(d1)
             print()
-
-
-        # print(out)
-        #
-        # kanban_simu = KanbanSimulate(kanban_simu)
-        # kanban_simu.skill, kanban_simu.move = update_order(MINE,out)    #   Les ordres provenant
-        #                                                                 #   de moi
-        #                                                                 #   OPP: Les ordres provenant
-        #                                                                 #   de mon adversaire
-
-
-        # print(kanban_simu)
-        # kanban_simu.simulate()
-        # print(kanban_simu)
-        #
-        # print("OUTPUT")
-        # #print(kanban_simu.output())
-        # in_text = kanban_simu.output()
-        # in_text = in_text.split('\n')
-        # print(in_text)
-        #
-        #
-        # kanban_board = KanbanBoard(None)
-        # kanban_board.read_score(in_text.pop(0))
-        # kanban_board.read_pacman(in_text,pacmans)
-        #kanban_board.read_pacman
-
-        # previous_out = out
-        # out = ''
-        #
-        # while previous_out != out :
-        #     previous_out = out
-        #     out = ''
-        #     for k1, p1 in pacmans.items():
-        #         print(p1)
-        #         out = p1.write_move(out)
-        #     print(out)
 
 if __name__ == '__main__':
     unittest.main()

@@ -585,7 +585,7 @@ class Pacman():
             self.path = copy.copy(clone.path)
             self.kanban = clone.kanban
             self.predict = copy.copy(clone.predict)
-            self._memento = clone
+            self._memento = clone._memento
 
     def __str__(self):
         if self is None :
@@ -603,10 +603,16 @@ class Pacman():
     def memento(self):
         self.x, self.y  = self._memento.x, self._memento.y
         self.type, self.ability, self.speed = self._memento.type, self._memento.ability, self._memento.speed
-        self.path = copy.copy(self._memento.path)
         self.kanban = self._memento.kanban
-        self.predict = self._memento.predict
+        self.predict = copy.copy(self._memento.predict)
+        self.path = copy.copy(self._memento.path)
         return self
+
+    @memento.setter
+    def memento(self,clone):
+        self._memento = copy.copy(clone)
+        self._memento.predict = copy.copy(clone.predict)
+        self._memento.path = copy.copy(clone.path)
 
     @property
     def coord(self):
@@ -764,7 +770,6 @@ class Pacman():
             predict = PacmanPredict(self)
             predict.x, predict.y, predict.command = x1, y1, 'MOVE2'
             self.predict = predict
-
             t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
 
         elif self.path is not None and len(self.path) > 0 :
@@ -849,6 +854,7 @@ class Pacman():
                     p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
                     p1_clone.predict.command = 'SPEED'
                     p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = self.type, 10, 5
+                    p1_clone.memento = p1_clone
                     commands.append(p1_clone)
 
                     # WRITE SWITCH # WRITE PATH     # APPEND
@@ -858,6 +864,7 @@ class Pacman():
                     p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
                     p1_clone.predict.command = 'SWITCH'
                     p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = TYPE_SWITCH[self.type][0], 10, 0
+                    p1_clone.memento = p1_clone
                     commands.append(p1_clone)
 
                     # WRITE SWITCH # WRITE PATH     # APPEND
@@ -867,6 +874,7 @@ class Pacman():
                     p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
                     p1_clone.predict.command = 'SWITCH'
                     p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = TYPE_SWITCH[self.type][1], 10, 0
+                    p1_clone.memento = p1_clone
                     commands.append(p1_clone)
 
                 else :
@@ -889,6 +897,7 @@ class Pacman():
                         p1_clone.predict.x, p1_clone.predict.y = p1_clone.x, p1_clone.y
 
                     p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = TYPE_SWITCH[self.type][0], 10, 0
+                    p1_clone.memento = p1_clone
                     commands.append(p1_clone)
         return commands
 
