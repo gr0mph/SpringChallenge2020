@@ -30,7 +30,6 @@ from test1.simulating.simulating import CaseSimulate
 from test1.simulating.simulating import KanbanBoard
 
 # Function
-from test1.simulating.simulating import iterate
 from test1.simulating.simulating import iterate2
 
 # Global
@@ -243,6 +242,7 @@ class _predicting(unittest.TestCase):
             p1_simu = PacmanSimulate(None)
             p1_simu.x, p1_simu.y = p1.x, p1.y
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            p1_simu = PacmanSimulate(p1_simu)
             kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
 
         for k1, p1 in kanban_node.opp.items():
@@ -250,9 +250,14 @@ class _predicting(unittest.TestCase):
             p1_simu = PacmanSimulate(None)
             p1_simu.x, p1_simu.y = p1.x, p1.y
             p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            p1_simu = PacmanSimulate(p1_simu)
             kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
 
+
         kanban_simu.setup2(kanban_node.nodes, kanban_node.cases)
+
+        # SAVE
+        kanban_simu = KanbanSimulate(kanban_simu)
 
         kanban_node = next(iter(kanban_node))
         out = ''
@@ -263,13 +268,23 @@ class _predicting(unittest.TestCase):
             #print(f'KEY {k1} PACMAN MINE {p1}')
             p1 = p1.deploy_cmd()
             for n1 in p1:
+                n1 = Pacman(n1)
                 outs.append( (n1.id,n1) )
 
         start = [[]]
         result = iterate2( start , outs , 0 )
+        i2 = 0
         for r1 in result :
             print("SERIAL")
 
+            # SAVE
+            kanban_simu.memento = kanban_simu
+            print(f'SCORING SAVED {kanban_simu._memento.scoring}')
+
+            # SAVE CASE
+            for k1, c1 in kanban_simu.case.items():
+                c1.memento = c1
+            print()
 
             previous_out = None
             out = ''
@@ -309,11 +324,40 @@ class _predicting(unittest.TestCase):
                 kanban_board.predict_pacman(d_pacman)
 
                 i1 = i1 + 1
-                if i1 == 2: break
+                if i1 == 5: break
 
             # Get score
             # IF MAX Select current branch
-            break
+            print()
+
+            # Memento
+            d_pacman = {}
+            for k1, p1 in kanban_simu.pacman.items():
+                p1[0] = p1[0].memento
+                p1[0] = PacmanSimulate(p1[0])
+                d_pacman[(p1[0].y,p1[0].x)] = [ p1[0] ]
+
+            # Memento
+            d_case = {}
+            for k1, c1 in kanban_simu.case.items():
+                c1 = c1.memento
+                d_case[k1] = c1
+            print()
+
+            # Memento
+            kanban_simu = kanban_simu.memento
+            print(f'SCORING RESTORED {kanban_simu.scoring}')
+
+            # Restore PacmanSimulate
+            kanban_simu.case = d_case
+            kanban_simu.pacman = d_pacman
+
+            # Memento
+            for p1 in r1:
+                p1 = p1.memento
+
+            i2 = i2 + 1
+            if i2 == 3 : break
 
 
         print("TEST2")

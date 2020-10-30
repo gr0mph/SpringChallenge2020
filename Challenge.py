@@ -576,6 +576,7 @@ class Pacman():
         self.kanban = None
         self.predict = None
         self.possibility = {}
+        self._memento = None
 
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
@@ -583,6 +584,8 @@ class Pacman():
             self.ability, self.speed = clone.ability, clone.speed
             self.path = copy.copy(clone.path)
             self.kanban = clone.kanban
+            self.predict = copy.copy(clone.predict)
+            self._memento = clone
 
     def __str__(self):
         if self is None :
@@ -595,6 +598,15 @@ class Pacman():
     def update2(self,state):
         # Create setter to add easily observer.
         pass
+
+    @property
+    def memento(self):
+        self.x, self.y  = self._memento.x, self._memento.y
+        self.type, self.ability, self.speed = self._memento.type, self._memento.ability, self._memento.speed
+        self.path = copy.copy(self._memento.path)
+        self.kanban = self._memento.kanban
+        self.predict = self._memento.predict
+        return self
 
     @property
     def coord(self):

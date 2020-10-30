@@ -72,39 +72,6 @@ class KanbanBoard():
         for _, p1 in d_pacman.items():
             p1.get_predict()
 
-def iterate(input,data,prev_id):
-
-    for i2 in input:
-        print(f'INPUT : {i2}')
-    for i2 in data:
-        print(f'DATA_ : {i2}')
-    print(f'PREV_ID : {prev_id}')
-    print("")
-
-    index = 0
-
-    next_data = []
-    next_id = False
-    for i1 in data:
-        if i1.id != prev_id and next_id == False :  next_id = i1.id
-        if next_id != False :                       next_data.append(i1)
-
-    for i1 in next_data:
-
-        print(f'FOR {i1} ID {i1.id} NEXT_ID {next_id}')
-        if i1.id == next_id:
-            output = copy.copy(input)
-            output.append(i1)
-            for i2 in output:
-                print(f'ITERATE {i2}')
-            print()
-            return iterate(output,next_data, next_id)
-    else :
-        return input
-
-    #append
-    #return output
-
 def iterate2( prev_output , prev_input , prev_id ):
     next_input = []
     next_id = False
@@ -135,10 +102,12 @@ class PacmanSimulate():
             self.x, self.y = clone.x, clone.y
             self.id = clone.id
             self.type, self.ability, self.speed = clone.type, clone.ability, clone.speed
+            self.memento = clone
         else :
             self.x, self.y = 0, 0
             self.id = 0    # Start: no pacman
             self.type, self.ability, self.speed = TYPE_SET['NEUTRAL'], 0 , 0
+            self.memento = None
 
     def __str__(self):
         return f'(ID: {self.id:3d}, {self.x:2d},{self.y:2d}), T_{self.type} , A_{self.ability:2d} , S_{self.speed}'
@@ -152,11 +121,12 @@ class CaseSimulate():
     def __init__(self,clone):
         if clone is not None :
             self.y, self.x = clone.y, clone.x
-            self.pellet = clone.pellet
-            self.pacman = clone.pacman
+            self.pellet, self.pacman = clone.pellet, clone.pacman
+            self._memento = clone._memento
         else :
             self.y, self.x = 0, 0
             self.pellet, self.pacman = 1, None
+            self._memento = None
 
     def __str__(self):
         if self.pacman is None :
@@ -168,6 +138,17 @@ class CaseSimulate():
     def coord(self):
         return (self.y, self.x)
 
+
+    @property
+    def memento(self):
+        self.y, self.x = self._memento.y, self._memento.x
+        self.pellet, self.pacman = self._memento.pellet, self._memento.pacman
+        return self
+
+    @memento.setter
+    def memento(self,clone):
+        self._memento = copy.copy(clone)
+
 def update_order(player,text):
     text, t1 = text.split('|'), ''
     skill = []
@@ -175,7 +156,6 @@ def update_order(player,text):
     for t1 in text:
         try:
             c1, f1 = next( (c1,f1) for c1,f1 in SKILL_COMMAND if t1.find(c1) != -1 )
-
             t_list = t1.split(' ')
             d1 = t_list[2:]
             d1[0] = int(d1[0]) + 1 if player == MINE else -(int(d1[0]) + 1)
@@ -186,7 +166,7 @@ def update_order(player,text):
         try:
             c1, f1 = next( (c1,f1) for c1,f1 in MOVE_COMMAND if t1.find(c1) != -1 )
             t_list = t1.split(' ')
-            d1 = t_list[2:-1]
+            d1 = t_list[2:]
             d1[0], d1[1], d1[2] = int(d1[0]) + 1 if player == MINE else -(int(d1[0]) + 1), int(d1[1]), int(d1[2])
             move.append( (c1, f1, d1) )
         except:
@@ -194,23 +174,38 @@ def update_order(player,text):
 
     return skill, move
 
+def manhattan(obj1,obj2):
+    distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
+    return distance
 
 class KanbanSimulate():
 
     def __init__(self,clone):
         if clone is not None :
             self.turn = clone.turn + 1
-            self.scoring = clone.scoring
+            self.scoring = copy.copy(clone.scoring)
             self.pacman = copy.copy(clone.pacman)
             self.case = copy.copy(clone.case)
-            self.memento = clone
+            self._memento = clone._memento
         else:
             self.turn, self.pacman, self.case = 1, {}, {}
             self.scoring = [ 0 , 0 ]
-            self.memento = None
-        self.step = 0
+            self._memento = None
         self.skill = []
         self.move = []
+
+    @property
+    def memento(self):
+        self.turn = self._memento.turn
+        self.scoring = copy.copy(self._memento.scoring)
+        self.pacman = copy.copy(self._memento.pacman)
+        self.case = copy.copy(self._memento.case)
+        self.skill, self.move = [] , []
+        return self
+
+    @memento.setter
+    def memento(self,clone):
+        self._memento = clone
 
 
     def __str__(self):
@@ -248,7 +243,7 @@ class KanbanSimulate():
         p1 = next(iter([p1 for k1, p1 in self.pacman.items() if p1[0].id == data[0]]))
         if p1[0].ability > 0 : return
         if p1[0].type == TYPE_SET['DEAD'] : return
-        p1[0].type = data[1]
+        p1[0].type = TYPE_SET[data[1]]
         p1[0].ability = 10
 
     def speed(self, data):
@@ -261,7 +256,6 @@ class KanbanSimulate():
     # StackOverflow
     # https://stackoverflow.com/questions/3199171/append-multiple-values-for-one-key-in-a-dictionary
     def move(self, data):
-        print("MOVE")
         p1 = next(iter([p1 for k1,p1 in self.pacman.items() if p1.id == data[0]]))
         if p1.speed > 0 :
             x1, y1 = data[1], data[2]
@@ -310,6 +304,10 @@ class KanbanSimulate():
                 after.append( (c1, f1, d1) )
                 for dir1, dy , dx in DIRS:
                     next_y, next_x = dy + y1 , dx + x1
+
+                    if manhattan( Point(next_x,next_y) , Point(next_x1, next_y1) ) > 1 :
+                        continue
+
                     next_coord = next_y , next_x
                     if next_coord in self.case :
                         if next_coord in self.pacman :
@@ -447,6 +445,7 @@ class KanbanSimulate():
         for k1, p1_s in self.pacman.items():
             for p1 in p1_s:
                 if p1.type != 4 :
+                    y1, x1 = k1
                     p1_owned = MINE if p1.id > 0 else OPP
 
                     pellet = self.case[k1].pellet
@@ -454,6 +453,7 @@ class KanbanSimulate():
                     self.case[k1].pacman = p1
 
                     self.scoring[p1_owned] = self.scoring[p1_owned] + pellet
+
 
 SKILL_COMMAND = [
 ( 'SWITCH' , KanbanSimulate.switch ),
