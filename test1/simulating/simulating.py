@@ -64,7 +64,10 @@ class KanbanBoard():
             else :
                 pacman_id = 1 * (pacman_id + 1)
 
-            p1 = pacmans[pacman_id]
+            if pacman_id in pacmans:
+                p1 = pacmans[pacman_id]
+            else :
+                p1 = Pacman(None)
             p1.coord = int(state_in[3]), int(state_in[2])
             p1.state = state_in[4], int(state_in[5]), int(state_in[6])
 

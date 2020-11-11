@@ -18,7 +18,7 @@ TYPE_SWITCH = { 0 : () , 1 : (2,3) , 2 : (3,1) , 3 : (1,2) , 4 : () }
 POSSIBILITY_SET = { 'PREVIOUS' : 0 , 'SUPER_PELLET' : 1 , 'OPP_PACMAN' : 2 , 'NOT_GUIDED' : 3 }
 POSSIBILITY_GET = { 0 : 'PREVIOUS' , 1 : 'SUPER_PELLET' , 2 : 'OPP_PACMAN' , 3 : 'NOT_GUIDED' }
 
-K_SIMULATE_TURN = 9
+K_SIMULATE_TURN = 5
 SIMULATE_TURN = K_SIMULATE_TURN
 
 K_NUMBER_BRANCH = 70
@@ -32,10 +32,13 @@ TURN = 0
 def read_map():
     global WIDTH, HEIGHT
     WIDTH, HEIGHT = [int(i) for i in input().split()]
-    print(f'WIDTH {WIDTH} HEIGHT {HEIGHT}', file=sys.stderr)
     global PACMAN_MAP
     for i in range(HEIGHT):
         PACMAN_MAP.append(list(input()))
+
+################################################################################
+#
+################################################################################
 
 class KanbanBoard():
 
@@ -70,9 +73,9 @@ class KanbanBoard():
         # TODO: ...
         # Can add an observer on strange blocking movement
         # TODO: ...
-        visible_pac_count = int(in_text.pop(0))
-        mine_pac_count = 0
-        for i in range(visible_pac_count):
+        self.visible_pac_count = int(in_text.pop(0))
+        self.mine_pac_count = 0
+        for i in range(self.visible_pac_count):
             state_in = in_text.pop(0).split()
             state_in[4] = TYPE_SET[state_in[4]]
             pacman_id, mine = int(state_in[0]), int(state_in[1])
@@ -81,11 +84,19 @@ class KanbanBoard():
                 pacman_id = -1 * (pacman_id + 1)
             else :
                 pacman_id = 1 * (pacman_id + 1)
+                self.mine_pac_count = self.mine_pac_count + 1
 
             if pacman_id in pacmans:
                 p1 = pacmans[pacman_id]
                 p1.coord = int(state_in[3]), int(state_in[2])
                 p1.state = state_in[4], int(state_in[5]), int(state_in[6])
+            else :
+                p1 = Pacman(None)
+                p1.id, p1.mine = pacman_id, mine
+                p1.coord = int(state_in[3]), int(state_in[2])
+                p1.state = state_in[4], int(state_in[5]), int(state_in[6])
+                pacmans[pacman_id] = p1
+
 
     def predict_pacman(self, d_pacman):
         for _, p1 in d_pacman.items():
@@ -113,6 +124,9 @@ def iterate2( prev_output , prev_input , prev_id ):
 
     return iterate2( next_output , next_input , next_id )
 
+################################################################################
+#
+################################################################################
 
 class PacmanSimulate():
 
@@ -134,6 +148,10 @@ class PacmanSimulate():
     @property
     def coord(self):
         return (self.y, self.x)
+
+################################################################################
+#
+################################################################################
 
 class CaseSimulate():
 
@@ -196,6 +214,10 @@ def update_order(player,text):
 def manhattan(obj1,obj2):
     distance = abs(obj1.x - obj2.x) + abs(obj1.y - obj2.y)
     return distance
+
+################################################################################
+#
+################################################################################
 
 class KanbanSimulate():
 
@@ -520,6 +542,10 @@ SKILL_COMMAND = [
 ]
 MOVE_COMMAND = [ ( 'MOVE' , None ) ]
 
+################################################################################
+#
+################################################################################
+
 class Point():
 
     def __init__(self,x,y):
@@ -532,6 +558,9 @@ class Point():
     def coord(self):
         return self.y, self.x
 
+################################################################################
+#
+################################################################################
 
 class PathPlanning():
 
@@ -552,7 +581,13 @@ class PathPlanning():
         for _, n1 in kanban_node.nodes.items():
             dist_gain[n1] = (float('Inf') , 0 , None , [] )
 
+        #print(f'solve2',file=sys.stderr)
+
         for k1, m1 in kanban_node.mine.items():
+
+            #print(f'k1 {k1} m1 {m1.id} / {m1}',file=sys.stderr)
+            #print(f'm1 path {m1.path}',file=sys.stderr)
+            #print(f'm1 predict {m1.predict}',file=sys.stderr)
 
             if m1.coord in kanban_node.nodes:
                 heapq.heappush( queue , ( 0 , kanban_node.nodes[m1.coord] ) )
@@ -615,6 +650,10 @@ class PathPlanning():
 
         return
 
+################################################################################
+#
+################################################################################
+
 class StrategyThief:
 
     def __init__(self,clone):
@@ -670,9 +709,6 @@ class StrategyThief:
                 len = float('Inf')
                 break
 
-            #if is_not_guided != True and c1.guided == False :
-            #    is_not_guided = True
-
             if is_not_guided != True and c1.pellet > 0 :
                 is_not_guided = True
 
@@ -680,12 +716,8 @@ class StrategyThief:
                 is_super_pellet = True
                 path_super_pellet = copy.copy(path)
 
-        #if len == float('Inf') :
-        #    is_not_guided = False
-
         if is_not_guided == True :
             #path_not_guided = copy.copy(path)
-            #path_not_guided = path[:2]
             path_not_guided = path[:3]
 
         gain = len - gain
@@ -712,8 +744,9 @@ class StrategyPriest:
     def __str__(self):
         pass
 
-# Kanban Simulate in development
-# Check simulating folder
+################################################################################
+#
+################################################################################
 
 class Case():
     def __init__(self,clone):
@@ -751,6 +784,10 @@ class Case():
     def coord(self,clone):
         self._coord = ( clone[0], clone[1] )
 
+################################################################################
+#
+################################################################################
+
 class Node(Case):
     def __init__(self,clone):
         super().__init__(clone)
@@ -770,6 +807,10 @@ class Node(Case):
     @property
     def coord(self):
         return (self._coord)
+
+################################################################################
+#
+################################################################################
 
 class Edge():
     def __init__(self,clone):
@@ -795,12 +836,12 @@ class Edge():
             yield self.allays[0]
             yield self.allays[-1]
 
+################################################################################
+#
+################################################################################
+
 class BoardAgent():
-    def __init__(self,clone):
-        self.id, self.mine = 0, None
-        self.cases = {}
-        if clone is not None :
-            self.id, self.mine = clone.id, clone.mine
+    def __init__(self,clone):       self.id, self.mine, self.d_case = clone.id, clone, {}
 
     def board(self,kanban_node):
         y_row, x_col = self.mine.y, self.mine.x
@@ -810,41 +851,39 @@ class BoardAgent():
                 y1, x1 = y_row + index * dy_row , x_col + index * dx_col
                 coord1 = y1, x1
                 if coord1 in kanban_node.cases:
-                    self.cases[coord1] = kanban_node.cases[coord1]
+                    self.d_case[coord1] = kanban_node.cases[coord1]
                 elif coord1 in kanban_node.nodes:
-                    self.cases[coord1] = kanban_node.nodes[coord1]
+                    self.d_case[coord1] = kanban_node.nodes[coord1]
                 else:
                     break
                 index = index + 1
 
     def update(self, pellet):
-        if self.mine.type == 4 :
-            return
-
-        for coord1, c1 in self.cases.items():
-            if coord1 not in pellet:
-                y1, x1 = coord1
-                if c1.pellet != 0 :
-                    c1.pellet = 0
+        for coord1, c1 in self.d_case.items():
+            if coord1 not in pellet and c1.pellet != 0 :    c1.pellet = 0
 
     def __str__(self):
         text = ''
-        for _, c1 in self.cases.items():
+        for _, c1 in self.d_case.items():
             y1, x1 = c1.coord
             coord = f'({x1},{y1},{c1.pellet})'
             text = f'{coord}' if text == '' else f'{text}->{coord}'
         return f'{self.id} {text}'
 
+################################################################################
+#
+################################################################################
+
 class BoardNodesAndEdges():
 
     def __init__(self,clone):
-        self.nodes = {}     #   Case
-        self.cases = {}     #   Case
-        self.edges = []
+        self.mine_score, self.opp_score = 0, 0
+        self.nodes, self.cases, self.edges = {}, {}, []     #   Case
         self.opp = {}
         self.mine = {}
         self.pather = None
         if clone is not None:
+            self.mine_score, self.opp_score = clone.mine_score, clone.opp_score
             self.nodes = copy.copy(clone.nodes)     #   Dynamic
             self.cases = copy.copy(clone.cases)     #   Dynamic
             self.edges = clone.edges                #   Static
@@ -1018,6 +1057,7 @@ class BoardNodesAndEdges():
 
             if desired_super_pellet in pacman_result:
                 m1.possibility['SUPER_PELLET'] = pacman_result[desired_super_pellet]
+
             elif desired_opp_pacman in pacman_result:
                 m1.possibility['OPP_PACMAN'] = pacman_result[desired_opp_pacman]
 
@@ -1030,10 +1070,18 @@ class BoardNodesAndEdges():
 
     def __next__(self):
 
+        print(f'__next__',file=sys.stderr)
+
         need_find_next3_move = False
 
         kanban_predicted = BoardNodesAndEdges(self)
         for k1, m1 in kanban_predicted.mine.items():
+
+
+            print(f'k1 {k1} m1 {m1.id} / {m1}',file=sys.stderr)
+            print(f'm1 path {m1.path}',file=sys.stderr)
+            print(f'm1 predict {m1.predict}',file=sys.stderr)
+
             mine_next = Pacman(m1)
             mine_next.kanban = kanban_predicted
             kanban_predicted.mine[k1] = mine_next
@@ -1041,6 +1089,10 @@ class BoardNodesAndEdges():
         kanban_predicted.find_next3_move()
 
         return kanban_predicted
+
+################################################################################
+#
+################################################################################
 
 class PacmanPredict():
 
@@ -1056,20 +1108,15 @@ class PacmanPredict():
     def coord(self):
         return (self.y, self.x)
 
-
+################################################################################
+#
+################################################################################
 
 class Pacman():
 
     def __init__(self,clone):
-        self.id, self.mine = -1, -1
         self.out = ''
-        self.x, self.y, self.type = 0,0,0
-        self.ability, self.speed = 0, 0
-        self.path = None
-        self.kanban = None
-        self.predict = None
         self.possibility = {}
-        self._memento = None
 
         if clone is not None :
             self.id, self.mine = clone.id, clone.mine
@@ -1079,14 +1126,20 @@ class Pacman():
             self.kanban = clone.kanban
             self.predict = copy.copy(clone.predict)
             self._memento = clone._memento
+        else:
+            self.id, self.mine = -1, -1
+            self.x, self.y, self.type, self.ability, self.speed = 0, 0, 0, 0, 0
+            self.path, self.kanban, self.predict = None, None, None
+            self._memento = None
+
 
     def __str__(self):
         if self is None :
             return 'Pacman None...'
         if self.mine == MINE :
-            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},s:{self.speed:2d})'
+            return f'({+self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]:8s},a:{self.ability:2d},s:{self.speed:2d})'
         else :
-            return f'({-self.id+1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]},a:{self.ability:2d},s:{self.speed:2d})'
+            return f'({-self.id-1},{self.mine} x:{self.x:2d},y:{self.y:2d},t:{TYPE_GET[self.type]:8s},a:{self.ability:2d},s:{self.speed:2d})'
 
     def update2(self,state):
         # Create setter to add easily observer.
@@ -1214,70 +1267,6 @@ class Pacman():
             self.kanban.cases[ self.coord ].pacman = self.id
             y1, x1 = self.coord
 
-    def write_switch(self,in_text):
-        if self.type == ROCK :
-            t = f'SWITCH {self.id-1} PAPER'
-            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
-            t = f'SWITCH {self.id-1} SCISSORS'
-            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
-        if self.type == PAPER :
-            t = f'SWITCH {self.id-1} ROCK'
-            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
-            t = f'SWITCH {self.id-1} SCISSORS'
-            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
-        if self.type == SCISSORS :
-            t = f'SWITCH {self.id-1} PAPER'
-            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
-            t = f'SWITCH {self.id-1} ROCK'
-            yield f' {t}' if in_text == '' else f'{in_text} | {t}'
-
-    def write_speed(self,in_text):
-        t = f'SPEED {self.id-1}'
-        t = f' {t}' if in_text == '' else f'{in_text} | {t}'
-        return t
-
-    def write_move(self,in_text):
-
-        if self.speed > 0 and self.path is not None and len(self.path) > 1 :
-            c1 =  self.path[1]
-            y1 , x1 = c1.coord
-            predict = PacmanPredict(self)
-            predict.x, predict.y, predict.command = x1, y1, 'MOVE2'
-            self.predict = predict
-            t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
-
-        elif self.path is not None and len(self.path) > 0 :
-            c1 =  self.path[0]
-            y1 , x1 = c1.coord
-            predict = PacmanPredict(self)
-            predict.x, predict.y, predict.command = x1, y1, 'MOVE1'
-            self.predict = predict
-            t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
-        else :
-            predict = PacmanPredict(self)
-            predict.x, predict.y, predict.command = self.x, self.y, 'MOVE0'
-            self.predict = predict
-            t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
-
-        t = f' {t} ' if in_text == '' else f'{in_text}| {t} '
-        return t
-
-    def write_2move(self, in_text):
-        c1 =  self.path[1]
-        y1 , x1 = c1.coord
-        t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
-        t = f' {t}' if in_text == '' else f'{in_text} | {t}'
-        return t
-
-    def write_1move(self, in_text):
-        if self.path is not None and len(self.path) > 0 :
-            c1 =  self.path[0]
-            y1 , x1 = c1.coord
-            t = f'MOVE {self.id-1} {str(x1)} {str(y1)}'
-        else :
-            t = f'MOVE {self.id-1} {str(self.x)} {str(self.y)}'
-        return t
-
     def get_predict(self):
         if self.speed > 0 and self.path is not None and len(self.path) > 1 :
             self.predict.command = 'MOVE2'
@@ -1285,6 +1274,10 @@ class Pacman():
         elif self.path is not None and len(self.path) > 0 :
             self.predict.command = 'MOVE1'
             self.predict.y, self.predict.x = self.path[0].coord
+        elif self.predict is None :
+            self.predict = PacmanPredict(self)
+            self.predict.command = 'MOVE0'
+            self.predict.y, self.predict.x = self.y, self.x
         else :
             self.predict.command = 'MOVE0'
             self.predict.y, self.predict.x = self.y, self.x
@@ -1312,6 +1305,52 @@ class Pacman():
             t = f'MOVE {self.id-1} {str(self.predict.x)} {str(self.predict.y)}'
             t = f' {t}' if in_text == '' else f'{in_text} | {t}'
         return t
+
+    def speed_cmd(self):
+        commands = []
+        if self.type == DEAD :  return commands
+
+        k1 = 'NONE'
+        if 'SUPER_PELLET' in self.possibility:  k1 = 'SUPER_PELLET'
+        elif 'PREVIOUS' in self.possibility:    k1 = 'PREVIOUS'
+        elif 'NOT_GUIDED' in self.possibility:  k1 = 'NOT_GUIDED'
+        else:
+            return commands
+
+        if self.ability == 0 :
+            p1_clone = Pacman(self)
+            p1_clone.path = self.possibility[k1]
+            p1_clone.predict = PacmanPredict(p1_clone)
+            p1_clone.predict.x, p1_clone.predict.y = self.x, self.y
+            p1_clone.predict.command = 'SPEED'
+            p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = self.type, 10, 5
+            p1_clone.memento = p1_clone
+            commands.append(p1_clone)
+        else :
+            # WRITE PATH
+            p1_clone = Pacman(self)
+            p1_clone.path = self.possibility[k1]
+            p1_clone.predict = PacmanPredict(p1_clone)
+            if p1_clone.speed > 0 and p1_clone.path is not None and len(p1_clone.path) > 1 :
+                p1_clone.predict.command = 'MOVE2'
+                y1, x1 = c1 = p1_clone.path[1].coord
+                p1_clone.predict.x, p1_clone.predict.y = x1, y1
+
+            elif p1_clone.path is not None and len(p1_clone.path) > 0 :
+                p1_clone.predict.command = 'MOVE1'
+                y1, x1 = c1 = p1_clone.path[0].coord
+                p1_clone.predict.x, p1_clone.predict.y = x1, y1
+
+            else :
+                p1_clone.predict.command = 'MOVE0'
+                p1_clone.predict.x, p1_clone.predict.y = p1_clone.x, p1_clone.y
+
+            p1_clone.predict.type , p1_clone.predict.ability, p1_clone.predict.speed = self.type, 10, 0
+            p1_clone.memento = p1_clone
+            commands.append(p1_clone)
+
+        return commands
+
 
     def deploy_cmd(self):
         commands = []
@@ -1382,7 +1421,6 @@ class Pacman():
 
         return commands
 
-
 def t_coord(coord):
     y, x = coord
     return f'({x}, {y})'
@@ -1397,30 +1435,30 @@ def t_check_map(PACMAN_MAP):
 
 if __name__ == '__main__':
     WIDTH, HEIGHT = [int(i) for i in input().split()]
-    print(f'WIDTH {WIDTH} HEIGHT {HEIGHT}', file=sys.stderr)
     for i in range(HEIGHT):
         PACMAN_MAP.append(list(input()))
 
-    t_check_map(PACMAN_MAP)
+    #t_check_map(PACMAN_MAP)
 
-    kanban_node = BoardNodesAndEdges(None)
-    kanban_node.set_up(PACMAN_MAP)
+    _mine_ = BoardNodesAndEdges(None)
+    _mine_.set_up(PACMAN_MAP)
 
+    _opp_ = BoardNodesAndEdges(None)
+    _opp_.set_up(PACMAN_MAP)
 
-    for k1, n1 in kanban_node.nodes.items():
-        n1.pellet = 1
-    for k1, c1 in kanban_node.cases.items():
-        c1.pellet = 1
+    for k1, n1 in _mine_.nodes.items(): n1.pellet = 1
+    for k1, c1 in _mine_.cases.items(): c1.pellet = 1
+    for k1, n1 in _opp_.nodes.items(): n1.pellet = 1
+    for k1, c1 in _opp_.cases.items(): c1.pellet = 1
 
-    pacman_board = {}
-    prev_pacmans = None
-    prev2_pacmans = None
+    _mine_agent_ = {}
+    _opp_agent_ = {}
 
     board_agent = {}
     pellet_board = {}
 
-    pather = PathPlanning(None)
-    kanban_node.pather = pather
+    _mine_.pather = PathPlanning(None)
+    _opp_.pather = PathPlanning(None)
 
     while True:
         # 0
@@ -1428,122 +1466,96 @@ if __name__ == '__main__':
         print(f'TURN {TURN}', file=sys.stderr )
 
         # 1
-        mine_score, opp_score = [int(i) for i in input().split()]
-        print(f'MINE_SCORE {mine_score} OPP_SCORE {opp_score}',file=sys.stderr)
+        _ = [int(i) for i in input().split()]
+        _mine_.mine_score, _mine_.opp_score = _[0], _[1]
+        _opp_.mine_score, _opp_.opp_score = _[1] , _[0]
 
         # 2
-        SIMULATE_TURN = K_SIMULATE_TURN
-        visible_pac_count = int(input())
-        mine_pac_count = 0
-        for i in range(visible_pac_count):
-            state_in = input().split()
-            state_in[4] = TYPE_SET[state_in[4]]
+        _ = int(input())
+        in_text = [f'{_}']
+        for i in range(_):
+            in_text.append(f'{input()}')
+        _ = KanbanBoard(None)
+        _.read_pacman( in_text , _mine_agent_ )
 
-            pacman_id, mine = int(state_in[0]), int(state_in[1])
-            if mine == OPP :
-                # Create a unique ID for each pacman
-                pacman_id = -1 * (pacman_id + 1)
-            else :
-                pacman_id = 1 * (pacman_id + 1)
-                mine_pac_count = mine_pac_count + 1
-                SIMULATE_TURN = SIMULATE_TURN - 1
+        # Update for _opp_ and _opp_agent_ via simu
 
-            if state_in[4] == 4 :
-                #   DEAD
-                del pacman_board[pacman_id]
-                if mine == OPP and -pacman_id in kanban_node.opp :
-                    del kanban_node.opp[-pacman_id]
-                elif pacman_id in kanban_node.mine :
-                    del kanban_node.mine[pacman_id]
-                    SIMULATE_TURN = SIMULATE_TURN + 1
-
-
-            if pacman_id in pacman_board :
-                t1 = ' , '.join(map(str,state_in))
-                pacman_board[pacman_id].update(state_in[2:])
-                # Technical Debt
-                #for predict_p1 in next_pacmans:
-                #    if predict_p1.id == pacman_id :
-                #        for previous_p1 in prev_pacmans:
-                #            if previous_p1.id == pacman_id :
-                #                pacman_board[pacman_id].correction(predict_p1, previous_p1)
-
-                if pacman_board[pacman_id].mine == MINE :
-                    pacman_agent = board_agent[pacman_id]
-                    pacman_agent = BoardAgent(pacman_agent)
-                    pacman_agent.mine = pacman_board[pacman_id]
-                    board_agent[pacman_id] = pacman_agent
-
-
-
-            else :
-                pacman_new = Pacman(None)
-                pacman_new.kanban = kanban_node
-                pacman_new.id, pacman_new.mine = pacman_id, mine
-                pacman_board[pacman_id] = pacman_new
-                t1 = ' , '.join(map(str,state_in))
-                pacman_board[pacman_id].update(state_in[2:])
-
-                if pacman_new.mine == MINE :
-                    pacman_agent = BoardAgent(None)
-                    pacman_agent.id, pacman_agent.mine = pacman_new.id, pacman_new
-                    board_agent[ pacman_id ] = pacman_agent
-
-            p1 = pacman_board[pacman_id]
-            p1.coord = int(state_in[3]), int(state_in[2])
-            p1.state = state_in[4], int(state_in[5]), int(state_in[6])
-
-        print(f'SIMULATE_TURN {SIMULATE_TURN}', file=sys.stderr)
+        mine_pac_count = _.mine_pac_count
         # FIRST TURN - IDENTIFY OPP UNKNOW PACMAN
-        for i1 in range(1,mine_pac_count+1):
-            if -i1 not in pacman_board:
-                pacman_opp = Pacman(pacman_board[i1])
-                pacman_opp.kanban = kanban_node
-                pacman_opp.mine = OPP
-                pacman_opp.x = WIDTH - 1 - pacman_opp.x
-                pacman_opp.id = -i1
-                pacman_board[-i1] = pacman_opp
-                state_in = [pacman_opp.x , pacman_opp.y , pacman_opp.type, pacman_opp.ability , pacman_opp.speed ]
-                pacman_board[-i1].update(state_in)
+        if TURN == 1 :
+            for i1 in range(1,mine_pac_count+1):
+                if -i1 not in _mine_agent_:
+                    pacman_opp = Pacman(_mine_agent_[i1])
+                    pacman_opp.kanban = _mine_
+                    pacman_opp.mine = OPP
+                    pacman_opp.x = WIDTH - 1 - pacman_opp.x
+                    pacman_opp.id = -i1
+                    _mine_agent_[-i1] = pacman_opp
+                    state_in = [pacman_opp.x , pacman_opp.y , pacman_opp.type, pacman_opp.ability , pacman_opp.speed ]
+                    _mine_agent_[-i1].update(state_in)
 
         # --> Add correction <--
 
+        if TURN == 1 :
+            for k1, m1 in _mine_agent_.items():
+                _ = Pacman(m1)
+                _.id, _.mine = -(_.id), 0 if _.mine == 1 else 1
+                _opp_agent_[-k1] = _
+
         # 3
         visible_pellet_count = int(input())  # all pellets in sight
-        print(f'PELLET LINE COUNT {visible_pellet_count}',file=sys.stderr)
         pellet_board = {}
         for i in range(visible_pellet_count):
             pellet_line = [int(j) for j in input().split()]
             pellet_x, pellet_y, pellet = pellet_line[0],pellet_line[1],pellet_line[2]
             if pellet == 10 :
                 pellet_coord = pellet_y, pellet_x
-                if pellet_coord in kanban_node.nodes:
-                    kanban_node.nodes[pellet_coord].pellet = pellet
-                elif pellet_coord in kanban_node.cases:
-                    kanban_node.cases[pellet_coord].pellet = pellet
+                if pellet_coord in _mine_.nodes:
+                    _mine_.nodes[pellet_coord].pellet = pellet
+                    _opp_.nodes[pellet_coord].pellet = pellet
+                elif pellet_coord in _mine_.cases:
+                    _mine_.cases[pellet_coord].pellet = pellet
+                    _opp_.cases[pellet_coord].pellet = pellet
 
             pellet_board[pellet_y, pellet_x] = pellet
 
         # --> Add correction <--
+        board_agent = {}
+        for k1, p1 in _mine_agent_.items():
+            if k1 < 0 :         continue
+            if p1.type == 4 :   continue
+            board_agent[k1] = BoardAgent(p1)
+
+        # --> Add correction <--
         for k1, a1 in board_agent.items():
-            a1 = BoardAgent(a1)
-            a1.board(kanban_node)
+            a1.board(_mine_)
             a1.update(pellet_board)
 
         # TREATMENT
-        for k1, p1 in pacman_board.items():
+        for k1, p1 in _mine_agent_.items():
             if p1.mine == OPP:
-                kanban_node.opp[p1.id] = p1
+                _mine_.opp[p1.id] = p1
                 continue
 
             else:
-                kanban_node.mine[p1.id] = p1
+                _mine_.mine[p1.id] = p1
                 continue
-        kanban_node.update()
+        _mine_.update()
+
+        # TREATMENT OPP
+        for k1, p1 in _opp_agent_.items():
+            if p1.mine == OPP:
+                _opp_.opp[p1.id] = p1
+                continue
+            else :
+                _opp_.mine[p1.id] = p1
+                continue
+        _opp_.update()
 
         # SETUP
         kanban_simu = KanbanSimulate(None)
-        for k1, p1 in kanban_node.mine.items():
+        for k1, p1 in _mine_.mine.items():
+            #print(f'ADD MINE IN SIMU {p1.id} / {p1}', file=sys.stderr)
             if p1.type == DEAD : continue
             p1_simu = PacmanSimulate(None)
             p1_simu.x, p1_simu.y = p1.x, p1.y
@@ -1551,11 +1563,12 @@ if __name__ == '__main__':
             p1_simu = PacmanSimulate(p1_simu)
             kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
 
-        for k1, p1 in kanban_node.opp.items():
+        for k1, p1 in _opp_.mine.items():
+            #print(f'ADD OPP IN SIMU {p1.id} / {p1}', file=sys.stderr)
             if p1.type == DEAD : continue
             p1_simu = PacmanSimulate(None)
             p1_simu.x, p1_simu.y = p1.x, p1.y
-            p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = p1.id, p1.type, 0, 0
+            p1_simu.id, p1_simu.type, p1_simu.ability, p1_simu.speed = -p1.id, p1.type, 0, 0
             p1_simu = PacmanSimulate(p1_simu)
             if (p1.y,p1.x) not in kanban_simu.pacman :
                 kanban_simu.pacman[(p1.y,p1.x)] = [ p1_simu ]
@@ -1565,21 +1578,31 @@ if __name__ == '__main__':
                 # TODO: Add reflexion
                 pass
 
-        kanban_simu.setup2(kanban_node.nodes, kanban_node.cases)
+        kanban_simu.setup2(_mine_.nodes, _mine_.cases)
 
         # SAVE
         kanban_simu = KanbanSimulate(kanban_simu)
 
-        kanban_node = next(iter(kanban_node))
+        _mine_ = next(iter(_mine_))
+        _opp_ = next(iter(_opp_))
         out = ''
         pacmans = {}
         cmd = {}
         outs = []
-        for k1, p1 in kanban_node.mine.items():
+        for k1, p1 in _mine_.mine.items():
             p1 = p1.deploy_cmd()
             for n1 in p1:
                 n1 = Pacman(n1)
                 outs.append( (n1.id,n1) )
+
+        for k1, p1 in _opp_.mine.items():
+            p1 = p1.speed_cmd()
+            for n1 in p1:
+                n1 = Pacman(n1)
+                n1.id = -n1.id
+                #print(f'n1 {n1.id} / {n1}',file=sys.stderr)
+                outs.append( (n1.id,n1) )
+
 
         # SAVE
         kanban_simu.memento = kanban_simu
@@ -1607,8 +1630,8 @@ if __name__ == '__main__':
         for r1 in result :
 
             number_branch = number_branch + 1
-            if number_branch > K_NUMBER_BRANCH :
-                break
+            #if number_branch > K_NUMBER_BRANCH :
+            #    break
 
             previous_out = None
             out = ''
@@ -1685,11 +1708,17 @@ if __name__ == '__main__':
         # OUT
         out = ''
         for p1 in d_pacman_max:
-            out = p1.write_cmd(out)
+            print(f'p1 {p1}',file=sys.stderr)
+            print(f'p1 path {p1.path}',file=sys.stderr)
+            print(f'p1 predict {p1.predict}', file=sys.stderr)
+            if p1.id > 0 :
+                print(f'OUT >>> {p1}',file=sys.stderr)
+                out = p1.write_cmd(out)
 
         # AFTER
         print(out)
 
         # UPDATE NEW DATA
-        #for _,p1 in kanban_node.mine.items():
-        #    pacman_board[p1.id] = p1
+        for p1 in d_pacman_max:
+            _mine_agent_[p1.id] = p1
+            _opp_agent_[-p1.id] = p1
