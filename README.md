@@ -4,13 +4,7 @@
 
 ***Coding Game Spring Challenge 2020***
 
-![](picture/league_wood.png) ![](picture/league_bronze.png)
-
-**No idea**
-
-**Do a getter for pacman state**
-
-- [x] @property
+![](picture/league_wood.png) ![](picture/league_bronze.png) ![](picture/league_silver.png)
 
 **Create node and create edge**
 
@@ -37,14 +31,14 @@
 - [x] Simple property (pellet, pacman id)
 - [x] Implement rules
 - [ ] Factoring all good method necessary in test
-- [ ] Test simulator
-- [ ] Add in main program
+- [x] Test simulator
+- [x] Add in main program
 
 **Predict pacman opp moving**
 
 - [ ] When pacman opp is know, try to predict his next movement
 
-![](picture/range_wood.png) ![](picture/range_bronze.png)
+![](picture/range_wood.png) ![](picture/range_bronze.png) ![](picture/range_silver.png)
 
 | Title   | URL                          |
 |:--------|:-----------------------------|
